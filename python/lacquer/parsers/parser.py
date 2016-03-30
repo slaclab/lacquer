@@ -21,13 +21,28 @@ tokens = ['INTEGER',               'DECIMAL',
 _exponent = r'[eE][+-]?\d+'
 _flit1 = r'\d+\.\d*({exp})?'.format(exp=_exponent)
 _flit2 = r'\.\d+({exp})?'.format(exp=_exponent)
-_flit3 = r'\d+({exp})'.format(exp=_exponent) # require exponent
+_flit3 = r'\d+({exp})'.format(exp=_exponent)  # require exponent
 _flits = '|'.join([_flit1, _flit2, _flit3])
 t_INTEGER = r'[-]?\d+'
 t_DECIMAL = r'[-]?({flits})'.format(flits=_flits)
 
 t_LPAREN = '\('
 t_RPAREN = '\)'
+
+t_EQ = r'='
+t_NE = r'<>|!='
+t_LT = r'<'
+t_LE = r'<='
+t_GT = r'>'
+t_GE = r'>='
+
+t_PLUS = r'+'
+t_MINUS = r'-'
+t_ASTERISK = r'*'
+t_SLASH = r'/'
+t_PERCENT = r'%'
+
+t_CONCAT = r'||'
 
 t_ignore = ' \t'
 
@@ -122,7 +137,6 @@ lex.lex()
 ##     return p
 
 
-
 # """table_properties : '(' table_property (',' table_property)* ')'"""
 # """table_property : identifier EQ expression"""
 
@@ -193,7 +207,8 @@ def p_query(p):
                          p[3]
                      ))
     else:
-        p[0] = Query(p.lineno(1), p.lexpos(1), with_=None, query_body=term, order_by=p[2], limit=p[3])
+        p[0] = Query(p.lineno(1), p.lexpos(1),
+                     with_=None, query_body=term, order_by=p[2], limit=p[3])
 
 
 def p_order_by_opt(p):
@@ -223,7 +238,8 @@ def p_sort_items(p):
 
 def p_sort_item(p):
     r"""sort_item : expression order_opt null_ordering_opt"""
-    p[0] = SortItem(line=None, pos=None, sort_key=p[1], ordering=p[2] or 'ASC', null_ordering=p[3])
+    p[0] = SortItem(p.lineno(1), p.lexpos(1),
+                    sort_key=p[1], ordering=p[2] or 'ASC', null_ordering=p[3])
 
 
 def p_order_opt(p):
@@ -248,6 +264,7 @@ def p_query_specification(p):
               #(WHERE boolean_expression)?
               #(GROUP BY grouping_elements)?
               #(HAVING boolean_expression)?
+
 
 def p_from_opt(p):
     r"""from_opt : FROM relations | empty"""
@@ -278,53 +295,128 @@ def p_grouping_elements(p):
     r"""grouping_elements : grouping_element | grouping_elements COMMA grouping_element"""
     _item_list(p)
 
-    ## """grouping_element : grouping_expressions                                               #singleGroupingSet"""
 
-    ## """grouping_expressions
-    ##     : '(' (expression (',' expression)*)? ')'
-    ##     | expression"""
+def p_grouping_element(p):
+    r"""grouping_element : grouping_expressions"""
+    p[0] = p[1]
 
-    ## """groupingSet
-    ##     : '(' (qualified_name (',' qualified_name)*)? ')'
-    ##     | qualified_name"""
 
-    ## """named_query
-    ##     : name=identifier (column_aliases)? AS '(' query ')'"""
+def p_grouping_expressions(p):
+    r"""grouping_expressions : expression | LPAREN expressions RPAREN"""
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = p[2]
+
+
+def p_expressions(p):
+    r"""expressions : expression | expressions COMMA expression"""
+    _item_list(p)
+
+
+# TODO: groupingSet ?
+# TODO: Named query ? (unsupported in MySQL)
+
 
 def p_set_quantifier_opt(p):
     r"""set_quantifier : DISTINCT | ALL | empty"""
     p[0] = p[1] 
-    
-
-    ## """select_item
-    ##     : expression (AS? identifier)?  #selectSingle
-    ##     | qualified_name '.' ASTERISK    #selectAll
-    ##     | ASTERISK                      #selectAll"""
-
-    ## """relation
-    ##     : join_type JOIN relation join_criteria | aliased_relation           #joinRelation"""
-
-    ## """join_type
-    ##     : INNER?
-    ##     | LEFT OUTER?
-    ##     | RIGHT OUTER?
-    ##     | FULL OUTER?"""
 
 
-    ## """join_criteria
-    ##     : ON boolean_expression
-    ##     | USING '(' identifier (',' identifier)* ')'"""
+def p_select_item(p):
+    r"""select_item
+            : expression alias_opt #selectSingle
+            | qualified_name '.' ASTERISK    #selectAll
+            | ASTERISK                       #selectAll"""
+    if len(p) == 3:
+        p[0] = SingleColumn(p.lineno(1), p.lexpos(1), alias=p[2], expression=p[1])
+    else:
+        p[0] = AllColumns(p.lineno(1), p.lexpos(1), prefix=p[1] if len(p) == 4 else None)
 
-    ## """aliased_relation
-    ##     : relationPrimary (AS? identifier column_aliases?)?"""
 
-    ## """column_aliases
-    ##     : '(' identifier (',' identifier)* ')'"""
+def p_alias_opt(p):
+    r"""alias_opt : AS identifier | identifier | empty"""
+    if p[1]:
+        p[0] = p[1] if len(p) == 2 else p[2]
+    else:
+        p[0] = None
+
+ def p_relation(p):
+    r"""relation
+            : join_relation
+            | aliased__relation
+    """
+
+def p_join_relation(p):
+    r"""join_relation :
+              relation CROSS JOIN aliased_relation # 4
+            | relation join_type JOIN relation join_criteria
+            | relation NATURAL join_type JOIN aliased_relation"""
+    if p[2] == "CROSS":
+        p[0] = Join(p.lineno(1), p.lexpos(1), join_type="CROSS",
+                    left=p[1], right=p[3], criteria=None)
+    else:
+        if p[2] == "NATURAL":
+            right = p[5]
+            criteria = NaturalJoin()
+        else:
+            right = p[4]
+            criteria = p[5]
+        join_type = p[2] if p[2] in ("LEFT", "RIGHT", "FULL") else "INNER"
+        p[0] = Join(p.lineno(1), p.lexpos(1), join_type=join_type,
+                    left=p[1], right=right, criteria=criteria)
+
+
+def p_join_type(p):
+    r"""join_type
+            : INNER
+            | LEFT outer_opt
+            | RIGHT outer_opt
+            | FULL outer_opt
+            | empty"""
+    p[0] = p[1]
+
+
+def p_outer_opt(p):
+    r"""outer_opt : OUTER | empty"""
+    pass
+
+
+def p_join_criteria(p):
+    r"""join_criteria
+            : ON boolean_expression
+            | USING LPAREN identifiers RPAREN"""
+    if len(p) == 3:
+        p[0] = JoinOn(expression=p[2])
+    else:
+        p[0] = JoinUsing(columns=p[3])
+
+
+def p_aliased_relation(p):
+    r"""aliased_relation : relation_primary alias_opt"""
+    p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[1],
+                           alias=p[2].alias, column_names=p[2].column_names)
+
+def p_alias_opt(p):
+    r"""alias_opt : as_opt identifier column_aliases_opt"""
+    # Note: We are just using Node for this one rather than creating a new class
+    p[0] = Node(p.lineno(1), p.lexpos(1), alias=p[2], column_names=p[3])
+
+
+def p_column_aliases_opt(p):
+    r"""column_aliases_opt
+            : LPAREN identifiers RPAREN
+            | empty"""
+    p[0] = p[1]
+
+def p_identifiers(p):
+    r"""identifiers : identifier | identifiers COMMA identifier"""
+    _item_list(p)
 
     ## """relationPrimary
     ##     : qualified_name                                                   #tableName
-    ##     | '(' query ')'                                                   #subqueryRelation
-    ##     | '(' relation ')'                                                #parenthesizedRelation
+    ##     | LPAREN query RPAREN                                                   #subqueryRelation
+    ##     | LPAREN relation RPAREN                                                #parenthesizedRelation
     ##     """
 
     ## """espressions: expression | expressions COMMA expression

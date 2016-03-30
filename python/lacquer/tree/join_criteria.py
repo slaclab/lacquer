@@ -1,45 +1,23 @@
 
 class JoinCriteria(object):
-    def __init__(self, line=None, pos=None):
-        self.line = line
-        self.pos = pos
-
-    def __str__(self):
-        """
-        """
-        pass
-
-
-class JoinUsing(JoinCriteria):
-    def __init__(self, line=None, pos=None, columns=None):
-        super(JoinUsing, self).__init__(line, pos)
-        self.columns = columns
-
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).addValue(columns).toString();
-        """
-        pass
+    pass
 
 
 class NaturalJoin(JoinCriteria):
-    def __init__(self, line=None, pos=None):
-        super(NaturalJoin, self).__init__(line, pos)
+    pass
+
+
+class JoinUsing(JoinCriteria):
+    def __init__(self, columns=None):
+        self.columns = columns
 
     def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).toString();
-        """
-        pass
+        return "{}{{columns={}}}".format(self.__class__.__name__, str(self.columns))
 
 
 class JoinOn(JoinCriteria):
-    def __init__(self, line=None, pos=None, expression=None):
-        super(JoinOn, self).__init__(line, pos)
+    def __init__(self, expression=None):
         self.expression = expression
 
     def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).addValue(expression).toString();
-        """
-        pass
+        return "{}{{expression={}}}".format(self.__class__.__name__, str(self.expression))
