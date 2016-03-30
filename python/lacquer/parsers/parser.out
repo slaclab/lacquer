@@ -1,0 +1,481 @@
+Created by PLY version 3.6 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    RESET
+    COMMITTED
+    FUNCTIONS
+    TRANSACTION
+    THEN
+    TEXT
+    OVER
+    YEAR
+    APPROXIMATE
+    COMMIT
+    CURRENT_DATE
+    LIMIT
+    TRUE
+    MINUS
+    PARTITIONS
+    UNBOUNDED
+    PRECEDING
+    FORMAT
+    LOCALTIMESTAMP
+    SESSION
+    PLUS
+    EXPLAIN
+    FULL
+    NATURAL
+    MAP
+    CONFIDENCE
+    CURRENT
+    GE
+    REPEATABLE
+    ESCAPE
+    FALSE
+    WHERE
+    SERIALIZABLE
+    MINUTE
+    FIRST
+    ON
+    NFKC
+    NFKD
+    LOGICAL
+    UNNEST
+    ONLY
+    VALUES
+    SCHEMAS
+    OR
+    DELETE
+    NORMALIZE
+    GROUP
+    SOME
+    GRAPHVIZ
+    CURRENT_TIMESTAMP
+    OPTION
+    FOLLOWING
+    NFC
+    MONTH
+    SELECT
+    RECURSIVE
+    DISTINCT
+    WITH
+    INTERVAL
+    ROLLUP
+    ALTER
+    COALESCE
+    INTO
+    ROW
+    RESCALED
+    NFD
+    END
+    DIVIDE
+    FOR
+    UNION
+    GRANT
+    NULLS
+    ELSE
+    TRY
+    RANGE
+    LAST
+    CATALOGS
+    EQ
+    AND
+    TABLES
+    UNCOMMITTED
+    TIMESTAMP
+    ORDINALITY
+    TIME
+    NOT
+    VIEW
+    ANY
+    AT
+    CURRENT_TIME
+    WORK
+    READ
+    CROSS
+    EXCEPT
+    ORDER
+    CASE
+    SUBSTRING
+    SET
+    HOUR
+    NO
+    COLUMN
+    BERNOULLI
+    DROP
+    NE
+    REPLACE
+    ASC
+    CAST
+    SETS
+    TABLE
+    ARRAY
+    EXTRACT
+    DIGIT_IDENTIFIER
+    OUTER
+    ISOLATION
+    DECIMAL
+    PARTITION
+    DISTRIBUTED
+    WRITE
+    ADD
+    RIGHT
+    BETWEEN
+    BY
+    COLUMNS
+    ALL
+    ROWS
+    JOIN
+    LIKE
+    NULLIF
+    USING
+    POSITION
+    LEFT
+    STRATIFY
+    PUBLIC
+    RENAME
+    USE
+    DESCRIBE
+    SYSTEM
+    GT
+    IF
+    DATE
+    POISSONIZED
+    NULL
+    DATA
+    LOCALTIME
+    INSERT
+    LE
+    SEMI
+    CONSTRAINT
+    CREATE
+    LEVEL
+    WHEN
+    TO
+    LT
+    TRY_CAST
+    COMMA
+    PRIVILEGES
+    DAY
+    GROUPING
+    CUBE
+    ROLLBACK
+    STRING
+    EXISTS
+    SHOW
+    IS
+    TIMES
+    BACKQUOTED_IDENTIFIER
+    START
+    AS
+    INNER
+    INTERSECT
+    IN
+    ANALYZE
+    DESC
+    TABLESAMPLE
+    QUOTED_IDENTIFIER
+    FROM
+    ZONE
+    SECOND
+    CALL
+    TYPE
+    HAVING
+
+Grammar
+
+Rule 0     S' -> table_element
+Rule 1     table_element -> IDENTIFIER type
+Rule 2     type -> base_type type_parameter_opt
+Rule 3     type_parameter_opt -> LPAREN INTEGER RPAREN
+Rule 4     type_parameter_opt -> empty
+Rule 5     base_type -> IDENTIFIER
+Rule 6     empty -> <empty>
+
+Terminals, with rules where they appear
+
+ADD                  : 
+ALL                  : 
+ALTER                : 
+ANALYZE              : 
+AND                  : 
+ANY                  : 
+APPROXIMATE          : 
+ARRAY                : 
+AS                   : 
+ASC                  : 
+AT                   : 
+BACKQUOTED_IDENTIFIER : 
+BERNOULLI            : 
+BETWEEN              : 
+BY                   : 
+CALL                 : 
+CASE                 : 
+CAST                 : 
+CATALOGS             : 
+COALESCE             : 
+COLUMN               : 
+COLUMNS              : 
+COMMA                : 
+COMMIT               : 
+COMMITTED            : 
+CONFIDENCE           : 
+CONSTRAINT           : 
+CREATE               : 
+CROSS                : 
+CUBE                 : 
+CURRENT              : 
+CURRENT_DATE         : 
+CURRENT_TIME         : 
+CURRENT_TIMESTAMP    : 
+DATA                 : 
+DATE                 : 
+DAY                  : 
+DECIMAL              : 
+DELETE               : 
+DESC                 : 
+DESCRIBE             : 
+DIGIT_IDENTIFIER     : 
+DISTINCT             : 
+DISTRIBUTED          : 
+DIVIDE               : 
+DROP                 : 
+ELSE                 : 
+END                  : 
+EQ                   : 
+ESCAPE               : 
+EXCEPT               : 
+EXISTS               : 
+EXPLAIN              : 
+EXTRACT              : 
+FALSE                : 
+FIRST                : 
+FOLLOWING            : 
+FOR                  : 
+FORMAT               : 
+FROM                 : 
+FULL                 : 
+FUNCTIONS            : 
+GE                   : 
+GRANT                : 
+GRAPHVIZ             : 
+GROUP                : 
+GROUPING             : 
+GT                   : 
+HAVING               : 
+HOUR                 : 
+IDENTIFIER           : 1 5
+IF                   : 
+IN                   : 
+INNER                : 
+INSERT               : 
+INTEGER              : 3
+INTERSECT            : 
+INTERVAL             : 
+INTO                 : 
+IS                   : 
+ISOLATION            : 
+JOIN                 : 
+LAST                 : 
+LE                   : 
+LEFT                 : 
+LEVEL                : 
+LIKE                 : 
+LIMIT                : 
+LOCALTIME            : 
+LOCALTIMESTAMP       : 
+LOGICAL              : 
+LPAREN               : 3
+LT                   : 
+MAP                  : 
+MINUS                : 
+MINUTE               : 
+MONTH                : 
+NATURAL              : 
+NE                   : 
+NFC                  : 
+NFD                  : 
+NFKC                 : 
+NFKD                 : 
+NO                   : 
+NORMALIZE            : 
+NOT                  : 
+NULL                 : 
+NULLIF               : 
+NULLS                : 
+ON                   : 
+ONLY                 : 
+OPTION               : 
+OR                   : 
+ORDER                : 
+ORDINALITY           : 
+OUTER                : 
+OVER                 : 
+PARTITION            : 
+PARTITIONS           : 
+PLUS                 : 
+POISSONIZED          : 
+POSITION             : 
+PRECEDING            : 
+PRIVILEGES           : 
+PUBLIC               : 
+QUOTED_IDENTIFIER    : 
+RANGE                : 
+READ                 : 
+RECURSIVE            : 
+RENAME               : 
+REPEATABLE           : 
+REPLACE              : 
+RESCALED             : 
+RESET                : 
+RIGHT                : 
+ROLLBACK             : 
+ROLLUP               : 
+ROW                  : 
+ROWS                 : 
+RPAREN               : 3
+SCHEMAS              : 
+SECOND               : 
+SELECT               : 
+SEMI                 : 
+SERIALIZABLE         : 
+SESSION              : 
+SET                  : 
+SETS                 : 
+SHOW                 : 
+SOME                 : 
+START                : 
+STRATIFY             : 
+STRING               : 
+SUBSTRING            : 
+SYSTEM               : 
+TABLE                : 
+TABLES               : 
+TABLESAMPLE          : 
+TEXT                 : 
+THEN                 : 
+TIME                 : 
+TIMES                : 
+TIMESTAMP            : 
+TO                   : 
+TRANSACTION          : 
+TRUE                 : 
+TRY                  : 
+TRY_CAST             : 
+TYPE                 : 
+UNBOUNDED            : 
+UNCOMMITTED          : 
+UNION                : 
+UNNEST               : 
+USE                  : 
+USING                : 
+VALUES               : 
+VIEW                 : 
+WHEN                 : 
+WHERE                : 
+WITH                 : 
+WORK                 : 
+WRITE                : 
+YEAR                 : 
+ZONE                 : 
+error                : 
+
+Nonterminals, with rules where they appear
+
+base_type            : 2
+empty                : 4
+table_element        : 0
+type                 : 1
+type_parameter_opt   : 2
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . table_element
+    (1) table_element -> . IDENTIFIER type
+
+    IDENTIFIER      shift and go to state 1
+
+    table_element                  shift and go to state 2
+
+state 1
+
+    (1) table_element -> IDENTIFIER . type
+    (2) type -> . base_type type_parameter_opt
+    (5) base_type -> . IDENTIFIER
+
+    IDENTIFIER      shift and go to state 3
+
+    base_type                      shift and go to state 5
+    type                           shift and go to state 4
+
+state 2
+
+    (0) S' -> table_element .
+
+
+
+state 3
+
+    (5) base_type -> IDENTIFIER .
+
+    LPAREN          reduce using rule 5 (base_type -> IDENTIFIER .)
+    $end            reduce using rule 5 (base_type -> IDENTIFIER .)
+
+
+state 4
+
+    (1) table_element -> IDENTIFIER type .
+
+    $end            reduce using rule 1 (table_element -> IDENTIFIER type .)
+
+
+state 5
+
+    (2) type -> base_type . type_parameter_opt
+    (3) type_parameter_opt -> . LPAREN INTEGER RPAREN
+    (4) type_parameter_opt -> . empty
+    (6) empty -> .
+
+    LPAREN          shift and go to state 7
+    $end            reduce using rule 6 (empty -> .)
+
+    type_parameter_opt             shift and go to state 6
+    empty                          shift and go to state 8
+
+state 6
+
+    (2) type -> base_type type_parameter_opt .
+
+    $end            reduce using rule 2 (type -> base_type type_parameter_opt .)
+
+
+state 7
+
+    (3) type_parameter_opt -> LPAREN . INTEGER RPAREN
+
+    INTEGER         shift and go to state 9
+
+
+state 8
+
+    (4) type_parameter_opt -> empty .
+
+    $end            reduce using rule 4 (type_parameter_opt -> empty .)
+
+
+state 9
+
+    (3) type_parameter_opt -> LPAREN INTEGER . RPAREN
+
+    RPAREN          shift and go to state 10
+
+
+state 10
+
+    (3) type_parameter_opt -> LPAREN INTEGER RPAREN .
+
+    $end            reduce using rule 3 (type_parameter_opt -> LPAREN INTEGER RPAREN .)
+

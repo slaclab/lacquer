@@ -1,0 +1,17 @@
+*.o
+*.so
+*.os
+*.pyc
+*_wrap.cc
+*Lib.py
+*~
+core.*
+.sconf_temp
+.sconsign.dblite
+config.log
+doc/doxygen.conf
+doc/html
+doc/xml
+doc/*.tag
+python/lsst/__init__.pyc
+.idea
