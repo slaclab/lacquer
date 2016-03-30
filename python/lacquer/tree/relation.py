@@ -55,21 +55,21 @@ class QueryBody(Relation):
         visitor.visit_query_body(self, context)
 
 
-class Unnest(Relation):
-    def __init__(self, line=None, pos=None, expressions=None, with_ordinality=None):
-        super(Unnest, self).__init__(line, pos)
-        self.expressions = expressions
-        self.with_ordinality = with_ordinality
-
-    def accept(self, visitor, context):
-        visitor.visit_unnest(self, context)
-
-    def __str__(self):
-        """
-        String result = "UNNEST(" + Joiner.on(", ").join(expressions) + ")";
-        if (withOrdinality) {
-            result += " WITH ORDINALITY";
-        }
-        return result;
-        """
-        pass
+# class Unnest(Relation):
+#     def __init__(self, line=None, pos=None, expressions=None, with_ordinality=None):
+#         super(Unnest, self).__init__(line, pos)
+#         self.expressions = expressions
+#         self.with_ordinality = with_ordinality
+#
+#     def accept(self, visitor, context):
+#         visitor.visit_unnest(self, context)
+#
+#     def __str__(self):
+#         """
+#         String result = "UNNEST(" + Joiner.on(", ").join(expressions) + ")";
+#         if (withOrdinality) {
+#             result += " WITH ORDINALITY";
+#         }
+#         return result;
+#         """
+#         pass
