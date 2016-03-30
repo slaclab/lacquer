@@ -1,4 +1,5 @@
 from .node import Node
+from lacquer.utils import node_str_omit_none
 
 
 class Relation(Node):
@@ -20,17 +21,17 @@ class AliasedRelation(Relation):
         visitor.visit_aliased_relation(self, context)
 
     def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).
-            add("relation", relation).add("alias", alias).add("columnNames", columnNames).omitNullValues().toString();
-        """
-        pass
+        return node_str_omit_none(self,
+                                  ("alias", self.alias),
+                                  ("column_names", self.column_names))
 
 
 class Join(Relation):
-    def __init__(self, line=None, pos=None, type=None, left=None, right=None, criteria=None):
+    TYPES = "CROSS LEFT RIGHT FULL INNER".split(" ")
+
+    def __init__(self, line=None, pos=None, join_type=None, left=None, right=None, criteria=None):
         super(Join, self).__init__(line, pos)
-        self.type = type
+        self.type = join_type
         self.left = left
         self.right = right
         self.criteria = criteria
@@ -39,11 +40,11 @@ class Join(Relation):
         visitor.visit_join(self, context)
 
     def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("type", type).
-            add("left", left).add("right", right).add("criteria", criteria).omitNullValues().toString();
-        """
-        pass
+        return node_str_omit_none(self,
+                                  ("join_type", self.join_type),
+                                  ("left", self.left),
+                                  ("right", self.right),
+                                  ("criteria", self.criteria))
 
 
 class QueryBody(Relation):
@@ -59,9 +60,6 @@ class Unnest(Relation):
         super(Unnest, self).__init__(line, pos)
         self.expressions = expressions
         self.with_ordinality = with_ordinality
-
-    def is_with_ordinality(self):
-        pass
 
     def accept(self, visitor, context):
         visitor.visit_unnest(self, context)
