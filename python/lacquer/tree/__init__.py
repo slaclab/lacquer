@@ -27,7 +27,7 @@ from .grouping import GroupingElement, GroupingSets, SimpleGroupBy
 from .join_criteria import JoinCriteria, JoinOn, JoinUsing, NaturalJoin
 from .set_operation import SetOperation, Except, Intersect, Union
 from .qualified_name import QualifiedName
-from .relation import Relation
+from .relation import Relation, AliasedRelation, Join, QueryBody  # , Unnest
 from .select import Select
 from .select_item import SelectItem, AllColumns, SingleColumn
 from .sort_item import SortItem
