@@ -331,20 +331,14 @@ def p_grouping_expressions(p):
         p[0] = p[2]
 
 
-def p_expressions(p):
-    r"""expressions : expression
-                    | expressions COMMA expression"""
-    _item_list(p)
-
-
 # TODO: groupingSet ?
 # TODO: Named query ? (unsupported in MySQL)
 
 
 def p_set_quantifier_opt(p):
-    r"""set_quantifier : DISTINCT
-                       | ALL
-                       | empty"""
+    r"""set_quantifier_opt : DISTINCT
+                           | ALL
+                           | empty"""
     p[0] = p[1] 
 
 
@@ -492,7 +486,7 @@ def p_simple_expression(p):
 
 
 def p_predicated(p):
-    r"""predicated : value_expression predicate[$value_expression.ctx]?"""
+    r"""predicated : value_expression predicate"""
     pass
 
     ## """predicate[ParserRuleContext value]
