@@ -18,6 +18,7 @@ tokens = ['INTEGER',               'DECIMAL',
           'EQ',                    'NE',
           'CONCAT',                'SLASH',
           'ASTERISK',              'PERCENT',
+          'NON_RESERVED',
           ] + reserved + list(presto_nonreserved)
 
 _exponent = r'[eE][+-]?\d+'
@@ -25,7 +26,6 @@ _flit1 = r'\d+\.\d*({exp})?'.format(exp=_exponent)
 _flit2 = r'\.\d+({exp})?'.format(exp=_exponent)
 _flit3 = r'\d+({exp})'.format(exp=_exponent)  # require exponent
 _flits = '|'.join([_flit1, _flit2, _flit3])
-t_INTEGER = r'[-]?\d+'
 t_DECIMAL = r'[-]?({flits})'.format(flits=_flits)
 
 t_LPAREN = '\('
@@ -37,7 +37,7 @@ t_LT = r'<'
 t_LE = r'<='
 t_GT = r'>'
 t_GE = r'>='
-
+t_COMMA = r','
 t_PLUS = r'\+'
 t_MINUS = r'-'
 t_ASTERISK = r'\*'
@@ -49,11 +49,19 @@ t_CONCAT = r'\|\|'
 t_ignore = ' \t'
 
 
+def t_INTEGER(t):
+    r'[-]?\d+'
+    t.type = "INTEGER"
+    return t
+
+
 def t_IDENTIFIER(t):
     r"""[a-zA-Z_][a-zA-Z0-9_@:]*"""
     val = t.value.lower()
-    if val in reserved:
-        t.type = reserved[val]
+    if val.upper() in reserved:
+        t.type = val.upper()
+    if val in presto_nonreserved:
+        t.type = "NON_RESERVED"
     return t
 
 
@@ -99,9 +107,10 @@ def t_error(t):
 lex.lex()
 
 
-## def p_statement(p):
-##     """statement
-##         : query                                                            #statementDefault
+def p_statement(p):
+    r"""statement : query"""
+    p[0] = p[1]
+
 ##         | USE schema=identifier                                            #use
 ##         | USE catalog=identifier '.' schema=identifier                     #use
 ##         | EXPLAIN ('(' explain_option (',' explain_option)* ')')? statement  #explain
@@ -192,7 +201,7 @@ def p_query(p):
         # clauses into the query specification (analyzer/planner
         # expects this structure to resolve references with respect
         # to columns defined in the query specification)
-        query = QuerySpecification()
+        query = term
         p[0] = Query(p.lineno(1), p.lexpos(1), with_=None,
                      query_body=QuerySpecification(
                          query.line,
@@ -217,7 +226,7 @@ def p_order_by_opt(p):
 
 
 def p_limit_opt(p):
-    r"""limit_opt : LIMIT INTEGER_VALUE
+    r"""limit_opt : LIMIT INTEGER
                   | LIMIT ALL
                   | empty"""
     return p[3] if p[1] else None
@@ -270,16 +279,17 @@ def p_query_specification(p):
 
     # Reduce the implicit join relations
     from_ = None
-    for relation in from_relations:
-        from_ = Join(p.lineno(4), p.lexpos(4), join_type="IMPLICIT", left=from_, right=relation)
+    if from_relations:
+        for rel in from_relations:
+            from_ = Join(p.lineno(4), p.lexpos(4), join_type="IMPLICIT", left=from_, right=rel)
 
     p[0] = QuerySpecification(p.lineno(1), p.lexpos(1),
-        select=Select(p.lineno(1), p.lexpos(1), distinct=distinct, select_items=select_items),
-        from_=from_,
-        where=where,
-        group_by=group_by,
-        having=having)
-
+                              select=Select(p.lineno(1), p.lexpos(1),
+                                            distinct=distinct, select_items=select_items),
+                              from_=from_,
+                              where=where,
+                              group_by=group_by,
+                              having=having)
 
 def p_from_opt(p):
     r"""from_opt : FROM relations
@@ -306,8 +316,8 @@ def p_having_opt(p):
 
 
 def p_select_items(p):
-    r"""select_items : select_item
-                     | select_items COMMA select_item"""
+    r"""select_items : select_items COMMA select_item
+                     | select_item"""
     _item_list(p)
 
 
@@ -362,9 +372,15 @@ def p_alias_opt(p):
         p[0] = None
 
 
+def p_relations(p):
+    r"""relations : relation
+                  | relations COMMA relation"""
+    _item_list(p)
+
+
 def p_relation(p):
     r"""relation : join_relation
-                 | aliased__relation"""
+                 | aliased_relation"""
     p[0] = p[1]
 
 
@@ -458,6 +474,7 @@ def p_expression(p):
 def p_boolean_expression(p):
     r"""boolean_expression : or_expression
                            | boolean_expression AND or_expression"""
+    print "boolean expression"
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -474,7 +491,7 @@ def p_or_expression(p):
 
 
 def p_simple_expression(p):
-    r"""simple_expression : predicated
+    r"""simple_expression : predicate
                           | NOT boolean_expression
                           | EXISTS LPAREN query RPAREN"""
     if len(p) == 2:
@@ -485,33 +502,92 @@ def p_simple_expression(p):
         p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[3])
 
 
-def p_predicated(p):
-    r"""predicated : value_expression predicate"""
-    pass
+def p_predicate(p):
+    r"""predicate : value_expression
+                  | value_expression comparison_operator value_expression
+                  | value_expression not_opt BETWEEN value_expression AND value_expression
+                  | value_expression not_opt IN LPAREN expressions RPAREN
+                  | value_expression not_opt IN LPAREN query RPAREN
+                  | value_expression not_opt LIKE value_expression
+                  | value_expression IS not_opt NULL"""
+    # TODO: add:    | value_expression not_opt LIKE value_expression ESCAPE value_expression
+    # TODO: maybe:  | value_expression IS not_opt DISTINCT FROM value_expression
+    if len(p) == 2:
+        p[0] = p[1]
+    elif p.slice[2].type == "comparison_operator":
+        p[0] = ComparisonExpression(p.lineno(1), p.lexpos(1), type=p[1], left=p[1], right=p[2])
+    else:
+        if p.slice[3].type == "BETWEEN":
+            p[0] = BetweenPredicate(p.lineno(1), p.lexpos(1), value=p[1], min=p[4], max=p[6])
+        elif p.slice[3].type == "IN":
+            value_list = None
+            if p.slice[5].type == "expressions":
+                value_list = InListExpression(p.lineno(4), p.lexpos(4), values=p[5])
+            elif p.slice[5].type == "query":
+                value_list = SubqueryExpression(p.lineno(4), p.lexpos(4), query=p[5])
+            else:
+                SyntaxError("Shouldn't be here!")
+            p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=value_list)
+        elif p.slice[3].type == "LIKE":
+            p[0]= LikePredicate(p.lineno(1), p.lexpos(1), value=p[1], pattern=p[4])
+        elif p.slice[2].type == "IS":
+            if p[4] == "NULL":
+                if p[3]:  # Not null
+                    p[0] = IsNotNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
+                else:
+                    p[0] = IsNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
+        if p[2] and p.slice[2].type == "not_opt":
+            p[0] = NotExpression(line=p[0].line, pos=p[0].pos, value=p[0])
 
-    ## """predicate[ParserRuleContext value]
-    ##     : comparison_operator value_expression                            #comparison
-    ##     | not_opt BETWEEN value_expression AND value_expression        #between
-    ##     | not_opt IN LPAREN expressions RPAREN                        #inList
-    ##     | not_opt IN LPAREN query RPAREN                                               #inSubquery
-    ##     | not_opt LIKE value_expression (ESCAPE value_expression)?  #like
-    ##     | IS not_opt NULL                                                        #nullPredicate
-    ##     | IS not_opt DISTINCT FROM value_expression                         #distinctFrom"""
+def p_value_expression(p):
+    r"""value_expression : term
+                         | value_expression PLUS term
+                         | value_expression MINUS term
+                         | value_expression AT timezone_specifier
+                         | string_value_expression"""
+    if p.slice[1].type in ("term", "string_value_expression"):
+        p[0] = p[1]
+    elif p.slice[1].type == "value_expression":
+        if p.slice[2].type == "AT":
+            # TODO: Implement TimeZone?
+            raise SyntaxError("TimeZone specifier not supported")
+        else:
+            p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
+    else:
+        raise SyntaxError("There's a problem with the value_expression rule")
 
-    ## """value_expression
-    ##     : primaryExpression                                                                 #value_expressionDefault
-    ##     | value_expression AT timezone_specifier                                              #atTimeZone
-    ##     | (MINUS | PLUS) value_expression                                           #arithmeticUnary
-    ##     | value_expression (ASTERISK | SLASH | PERCENT)   value_expression  #arithmeticBinary
-    ##     | value_expression (PLUS | MINUS) value_expression                #arithmeticBinary
-    ##     | value_expression CONCAT value_expression                                 #concatenation"""
+
+def p_term(p):
+    r"""term : factor
+             | term ASTERISK factor
+             | term SLASH factor
+             | term PERCENT factor"""
+    if p.slice[1].type == "factor":
+        p[0] = p[1]
+    else:
+        p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
 
 
+def p_factor(p):
+    r"""factor : plus_or_minus_opt primary_expression"""
+    if p[1]:
+        p[0] = ArithmeticUnaryExpression(p.lineno(1), p.lexpos(1), value=p[2], sign=p[1])
+    else:
+        p[0] = p[2]
+
+
+def p_string_value_expression(p):
+    r"""string_value_expression : value_expression CONCAT value_expression"""
+    p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name="concat", arguments=[p[1], p[3]])
 
 
 # TODO : Check Expressions and Kleene Star/One or more behavior
 
-## """primaryExpression
+
+def p_primary_expression(p):
+    r"""primary_expression : literal
+                           | identifier"""
+    p[0] = p[1]
     ##     | POSITION LPAREN value_expression IN value_expression RPAREN                      #position
     ##     | '(' expression (',' expression)+ ')'                                           #rowConstructor
     ##     | ROW LPAREN expressions RPAREN                                       #rowConstructor
@@ -548,24 +624,48 @@ def p_literal(p):
                 | STRING
                 | interval
                 | identifier STRING"""
-    if p[1].type == "NULL":
+    if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
-    elif p[1].type == "STRING":
+    elif p.slice[1].type == "STRING":
         p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1].value)
+    else:
+        p[0] = p[1]
 
 
-    ## """timezone_specifier
-    ##     : TIME ZONE interval  #timeZoneInterval
-    ##     | TIME ZONE STRING    #timeZoneString"""
+def p_timezone_specifier(p):
+    r"""timezone_specifier : TIME ZONE interval
+                           | TIME ZONE STRING"""
 
 
-    ## comparisonOperator
-    ##     : EQ | NEQ | LT | LTE | GT | GTE
+def p_comparison_operator(p):
+    r"""comparison_operator : EQ
+                           | NE
+                           | LT
+                           | LE
+                           | GT
+                           | GE"""
+    p[0] = p[1]
+
+
+def p_as_opt(p):
+    r"""as_opt : AS
+               | empty"""
+    # Ignore
+    pass
+
+
+def p_not_opt(p):
+    r"""not_opt : NOT
+                | empty"""
+    # Ignore
+    p[0] = p[1]
+
+
 
 def p_boolean_value(p):
     r"""boolean_value : TRUE
                       | FALSE"""
-    p[0] = BooleanLiteral(p.lineno(1), p.lexpos(1), p[1])
+    p[0] = BooleanLiteral(p.lineno(1), p.lexpos(1), value=p[1])
 
 
 def p_interval(p):
@@ -654,18 +754,23 @@ def p_identifier(p):
     p[0] = p[1]
 
 
+def p_non_reserved(p):
+    r"""non_reserved : NON_RESERVED"""
+    p[0] = p[1]
+
 def p_quoted_identifier(p):
     r"""quoted_identifier : QUOTED_IDENTIFIER"""
     p[0] = p[1]
 
 
 def p_number(p):
-    r"""number : DECIMAL_VALUE
-               | INTEGER_VALUE"""
-    if p.type == "DECIMAL_VALUE":
+    r"""number : DECIMAL
+               | INTEGER"""
+    if p.slice[1].type == "DECIMAL":
         p[0] = DoubleLiteral(p.lineno(1), p.lexpos(1), p[1])
     else:
         p[0] = LongLiteral(p.lineno(1), p.lexpos(1), p[1])
+
 
 #def
 
@@ -714,5 +819,7 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-print parser.parse("select 1 from dual", tracking=True)
+print repr(parser.parse("SELECT 1 , 2 ", tracking=True))
+#print parser.parse("SELECT 1, 2 ", tracking=True, debug=True)
+print parser.parse("SELECT 1 FROM dual", tracking=True, debug=True)
 
