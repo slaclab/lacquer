@@ -8,7 +8,7 @@ reserved = sorted(set(presto_tokens).difference(presto_nonreserved))
 tokens = ['INTEGER',               'DECIMAL',
           'IDENTIFIER',            'DIGIT_IDENTIFIER',
           'QUOTED_IDENTIFIER',     'BACKQUOTED_IDENTIFIER',
-          'STRING',
+          'STRING',                'PERIOD',
           'COMMA',                 'SEMI',
           'PLUS',                  'MINUS',
           'TIMES',                 'DIVIDE',
@@ -142,12 +142,13 @@ lex.lex()
 # """table_properties : '(' table_property (',' table_property)* ')'"""
 # """table_property : identifier EQ expression"""
 
+# TODO : Check this
 
 def p_query_term(p):
-    r"""query_term
-         : query_primary
-         | query_term INTERSECT set_quantifier_opt query_term
-         | query_term (UNION | EXCEPT) set_quantifier_opt query_term""" # TODO : Check this
+    r"""query_term : query_primary
+                   | query_term INTERSECT set_quantifier_opt query_term
+                   | query_term UNION     set_quantifier_opt query_term
+                   | query_term EXCEPT    set_quantifier_opt query_term"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -167,11 +168,10 @@ def p_query_term(p):
 
 
 def p_query_primary(p):
-    r"""query_primary
-            : query_specification
-            | TABLE qualified_name                  #table
-            | VALUES expressions      #inlineTable
-            | LPAREN query RPAREN                 #subquery"""
+    r"""query_primary : query_specification
+            | TABLE qualified_name
+            | VALUES expressions
+            | LPAREN query RPAREN"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -184,10 +184,7 @@ def p_query_primary(p):
 
 
 def p_query(p):
-    r"""query:
-             query_term
-             order_by_opt
-             limit_opt"""
+    r"""query : query_term order_by_opt limit_opt"""
     term = p[1]
     if isinstance(term, QuerySpecification):
         # When we have a simple query specification
@@ -214,12 +211,15 @@ def p_query(p):
 
 
 def p_order_by_opt(p):
-    r"""order_by_opt: ORDER BY sort_items | empty"""
+    r"""order_by_opt : ORDER BY sort_items
+                     | empty"""
     return p[3] if p[1] else None
 
 
 def p_limit_opt(p):
-    r"""limit_opt: LIMIT INTEGER_VALUE | LIMIT ALL | empty"""
+    r"""limit_opt : LIMIT INTEGER_VALUE
+                  | LIMIT ALL
+                  | empty"""
     return p[3] if p[1] else None
 
 
@@ -234,7 +234,8 @@ def _item_list(p):
 
 
 def p_sort_items(p):
-    r"""sort_items : sort_item | sort_items COMMA sort_item"""
+    r"""sort_items : sort_item
+                   | sort_items COMMA sort_item"""
     _item_list(p)
 
 
@@ -245,27 +246,21 @@ def p_sort_item(p):
 
 
 def p_order_opt(p):
-    r"""order_opt : ASC | DESC | empty"""
+    r"""order_opt : ASC
+                  | DESC
+                  | empty"""
     p[0] = p[1]
 
 
 def p_null_ordering_opt(p):
-    r"""null_ordering_opt : NULLS FIRST | NULLS LAST | empty"""
+    r"""null_ordering_opt : NULLS FIRST
+                          | NULLS LAST
+                          | empty"""
     p[0] = p[2] if p[1] else None
 
 
 def p_query_specification(p):
-    r"""query_specification
-            : SELECT set_quantifier_opt select_items
-                from_opt
-                where_opt
-                group_by_opt
-                having_opt"""
-
-              #(FROM relations)?
-              #(WHERE boolean_expression)?
-              #(GROUP BY grouping_elements)?
-              #(HAVING boolean_expression)?
+    r"""query_specification : SELECT set_quantifier_opt select_items from_opt where_opt group_by_opt having_opt"""
     distinct = p[2] == "DISTINCT"
     select_items = p[3]
     from_relations = p[4]
@@ -287,32 +282,38 @@ def p_query_specification(p):
 
 
 def p_from_opt(p):
-    r"""from_opt : FROM relations | empty"""
+    r"""from_opt : FROM relations
+                 | empty"""
     return p[2] if p[1] else None
 
 
 def p_where_opt(p):
-    r"""from_opt : WHERE boolean_expression | empty"""
+    r"""where_opt : WHERE boolean_expression
+                 | empty"""
     return p[2] if p[1] else None
 
 
 def p_group_by_opt(p):
-    r"""group_by_opt : GROUP BY set_quantifier_opt grouping_elements | empty"""
+    r"""group_by_opt : GROUP BY set_quantifier_opt grouping_elements
+                     | empty"""
     return p[3] if p[1] else None
 
 
 def p_having_opt(p):
-    r"""from_opt : HAVING boolean_expression | empty"""
+    r"""having_opt : HAVING boolean_expression
+                 | empty"""
     return p[2] if p[1] else None
 
 
 def p_select_items(p):
-    r"""select_items : select_item | select_items COMMA select_item"""
+    r"""select_items : select_item
+                     | select_items COMMA select_item"""
     _item_list(p)
 
 
 def p_grouping_elements(p):
-    r"""grouping_elements : grouping_element | grouping_elements COMMA grouping_element"""
+    r"""grouping_elements : grouping_element
+                          | grouping_elements COMMA grouping_element"""
     _item_list(p)
 
 
@@ -322,7 +323,8 @@ def p_grouping_element(p):
 
 
 def p_grouping_expressions(p):
-    r"""grouping_expressions : expression | LPAREN expressions RPAREN"""
+    r"""grouping_expressions : expression
+                             | LPAREN expressions RPAREN"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -330,7 +332,8 @@ def p_grouping_expressions(p):
 
 
 def p_expressions(p):
-    r"""expressions : expression | expressions COMMA expression"""
+    r"""expressions : expression
+                    | expressions COMMA expression"""
     _item_list(p)
 
 
@@ -339,15 +342,16 @@ def p_expressions(p):
 
 
 def p_set_quantifier_opt(p):
-    r"""set_quantifier : DISTINCT | ALL | empty"""
+    r"""set_quantifier : DISTINCT
+                       | ALL
+                       | empty"""
     p[0] = p[1] 
 
 
 def p_select_item(p):
-    r"""select_item
-            : expression alias_opt
-            | qualified_name '.' ASTERISK
-            | ASTERISK"""
+    r"""select_item : expression alias_opt
+                    | qualified_name '.' ASTERISK
+                    | ASTERISK"""
     if len(p) == 3:
         p[0] = SingleColumn(p.lineno(1), p.lexpos(1), alias=p[2], expression=p[1])
     else:
@@ -355,7 +359,9 @@ def p_select_item(p):
 
 
 def p_alias_opt(p):
-    r"""alias_opt : AS identifier | identifier | empty"""
+    r"""alias_opt : AS identifier
+                  | identifier
+                  | empty"""
     if p[1]:
         p[0] = p[1] if len(p) == 2 else p[2]
     else:
@@ -363,15 +369,15 @@ def p_alias_opt(p):
 
 
 def p_relation(p):
-    r"""relation : join_relation | aliased__relation"""
+    r"""relation : join_relation
+                 | aliased__relation"""
     p[0] = p[1]
 
 
 def p_join_relation(p):
-    r"""join_relation :
-              relation CROSS JOIN aliased_relation # 4
-            | relation join_type JOIN relation join_criteria
-            | relation NATURAL join_type JOIN aliased_relation"""
+    r"""join_relation : relation CROSS JOIN aliased_relation
+                      | relation join_type JOIN relation join_criteria
+                      | relation NATURAL join_type JOIN aliased_relation"""
     if p[2] == "CROSS":
         p[0] = Join(p.lineno(1), p.lexpos(1), join_type="CROSS",
                     left=p[1], right=p[3], criteria=None)
@@ -388,24 +394,23 @@ def p_join_relation(p):
 
 
 def p_join_type(p):
-    r"""join_type
-            : INNER
-            | LEFT outer_opt
-            | RIGHT outer_opt
-            | FULL outer_opt
-            | empty"""
+    r"""join_type : INNER
+                  | LEFT outer_opt
+                  | RIGHT outer_opt
+                  | FULL outer_opt
+                  | empty"""
     p[0] = p[1]
 
 
 def p_outer_opt(p):
-    r"""outer_opt : OUTER | empty"""
+    r"""outer_opt : OUTER
+                  | empty"""
     pass
 
 
 def p_join_criteria(p):
-    r"""join_criteria
-            : ON boolean_expression
-            | USING LPAREN identifiers RPAREN"""
+    r"""join_criteria : ON boolean_expression
+                      | USING LPAREN identifiers RPAREN"""
     if len(p) == 3:
         p[0] = JoinOn(expression=p[2])
     else:
@@ -427,43 +432,47 @@ def p_correlation_alias_opt(p):
 
 
 def p_column_list_opt(p):
-    r"""column_list_opt : LPAREN identifiers RPAREN | empty"""
+    r"""column_list_opt : LPAREN identifiers RPAREN
+                        | empty"""
     p[0] = p[2] if p[1] else None
 
 
 def p_identifiers(p):
-    r"""identifiers : identifier | identifiers COMMA identifier"""
+    r"""identifiers : identifier
+                    | identifiers COMMA identifier"""
     _item_list(p)
 
 
 def p_relation_primary(p):
-    r"""relation_primary
-            : qualified_name
-            | LPAREN query RPAREN
-            | LPAREN relation RPAREN"""
+    r"""relation_primary : qualified_name
+                         | LPAREN query RPAREN
+                         | LPAREN relation RPAREN"""
     p[0] = p[1] if len(p) == 2 else p[2]
 
+
 def p_expressions(p):
-    r"""expressions: expression | expressions COMMA expression"""
+    r"""expressions : expression
+                    | expressions COMMA expression"""
     _item_list(p)
+
 
 def p_expression(p):
     r"""expression : boolean_expression"""
     p[0] = p[1]
 
+
 def p_boolean_expression(p):
-    r"""boolean_expression
-            : or_expression
-            | boolean_expression AND or_expression"""
+    r"""boolean_expression : or_expression
+                           | boolean_expression AND or_expression"""
     if len(p) == 2:
         p[0] = p[1]
     else:
         p[0] = LogicalBinaryExpression(p.lineno(1), p.lexpos(1), type="AND", left=p[1], right=p[2])
 
+
 def p_or_expression(p):
-    r"""or_expression
-            : simple_expression
-            | or_expression OR simple_expression"""
+    r"""or_expression : simple_expression
+                      | or_expression OR simple_expression"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -471,10 +480,9 @@ def p_or_expression(p):
 
 
 def p_simple_expression(p):
-    r"""simple_expression
-            : predicated                                                   #booleanDefault
-            | NOT boolean_expression                                        #logicalNot
-            | EXISTS LPAREN query RPAREN                                         #exists"""
+    r"""simple_expression : predicated
+                          | NOT boolean_expression
+                          | EXISTS LPAREN query RPAREN"""
     if len(p) == 2:
         p[0] = p[1]
     elif len(p) == 3:
@@ -482,10 +490,10 @@ def p_simple_expression(p):
     else:
         p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[3])
 
-def p_predicated(p):
-    r"""predicated
-           : value_expression predicate[$value_expression.ctx]?"""
 
+def p_predicated(p):
+    r"""predicated : value_expression predicate[$value_expression.ctx]?"""
+    pass
 
     ## """predicate[ParserRuleContext value]
     ##     : comparison_operator value_expression                            #comparison
@@ -538,15 +546,14 @@ def p_predicated(p):
     ###     | NORMALIZE LPAREN value_expression (',' normalForm)? RPAREN                            #normalize
     ###     | EXTRACT LPAREN identifier FROM value_expression RPAREN                                #extract
 
+
 def p_literal(p):
-    r"""literal
-            : NULL                                                                           #nullLiteral
-            | number                                                                         #numericLiteral
-            | boolean_value                                                                   #booleanLiteral
-            | STRING                                                                         #stringLiteral
-            | interval                                                                       #intervalLiteral
-            | identifier STRING                                                              #typeConstructor
-            """
+    r"""literal : NULL
+                | number
+                | boolean_value
+                | STRING
+                | interval
+                | identifier STRING"""
     if p[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p[1].type == "STRING":
@@ -562,24 +569,37 @@ def p_literal(p):
     ##     : EQ | NEQ | LT | LTE | GT | GTE
 
 def p_boolean_value(p):
-    r"""boolean_value : TRUE | FALSE"""
+    r"""boolean_value : TRUE
+                      | FALSE"""
     p[0] = BooleanLiteral(p.lineno(1), p.lexpos(1), p[1])
+
 
 def p_interval(p):
     r"""interval : INTERVAL plus_or_minus_opt STRING interval_field interval_end_opt"""
     sign = p[2] or "+"
     p[0] = IntervalLiteral(p.lineno(1), p.lexpos(1), value=p[3], sign=p[2], start_field=p[4], end_field=p[5])
 
+
 def p_interval_end_opt(p):
-    r"""interval_end_opt : TO interval_field | empty"""
+    r"""interval_end_opt : TO interval_field
+                         | empty"""
     p[0] = p[2] if p[1] else None
 
+
 def p_interval_field(p):
-    r"""interval_field : YEAR | MONTH | DAY | HOUR | MINUTE | SECOND"""
+    r"""interval_field : YEAR
+                       | MONTH
+                       | DAY
+                       | HOUR
+                       | MINUTE
+                       | SECOND"""
     p[0] = p[1]
 
+
 def p_plus_or_minus_opt(p):
-    r"""plus_or_minus_opt : PLUS | MINUS | empty"""
+    r"""plus_or_minus_opt : PLUS
+                          | MINUS
+                          | empty"""
     p[0] = p[1]
 
 
@@ -595,7 +615,7 @@ def p_type(p):
 
 def p_integer_parameter_opt(p):
     """integer_parameter_opt : LPAREN INTEGER RPAREN
-                          | empty"""
+                             | empty"""
     p[0] = "(%s)" % p[2] if p[1] else None
 
 
@@ -626,24 +646,28 @@ def p_when_clause(p):
     ##     | identifier '=>' expression    #namedArgument
 
 def p_qualified_name(p):
-    r"""qualified_name : identifier | qualified_name . identifier"""
+    r"""qualified_name : identifier
+                       | qualified_name '.' identifier"""
     return _item_list(p)
 
+
 def p_identifier(p):
-    r"""identifier
-            : IDENTIFIER
-            | quoted_identifier
-            | non_reserved
-            | BACKQUOTED_IDENTIFIER
-            | DIGIT_IDENTIFIER"""
+    r"""identifier : IDENTIFIER
+                   | quoted_identifier
+                   | non_reserved
+                   | BACKQUOTED_IDENTIFIER
+                   | DIGIT_IDENTIFIER"""
     p[0] = p[1]
+
 
 def p_quoted_identifier(p):
     r"""quoted_identifier : QUOTED_IDENTIFIER"""
     p[0] = p[1]
 
+
 def p_number(p):
-    r"""number : DECIMAL_VALUE | INTEGER_VALUE"""
+    r"""number : DECIMAL_VALUE
+               | INTEGER_VALUE"""
     if p.type == "DECIMAL_VALUE":
         p[0] = DoubleLiteral(p.lineno(1), p.lexpos(1), p[1])
     else:
