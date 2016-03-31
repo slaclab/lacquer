@@ -20,6 +20,7 @@ Lots of classes in the literal and statement modules...
 """
 from .literal import *
 from .statement import *
+from .expression import *
 
 from .call_argument import CallArgument
 from .explain import ExplainFormat, ExplainType, ExplainOption

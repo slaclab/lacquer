@@ -264,6 +264,24 @@ def p_query_specification(p):
               #(WHERE boolean_expression)?
               #(GROUP BY grouping_elements)?
               #(HAVING boolean_expression)?
+    distinct = p[2] == "DISTINCT"
+    select_items = p[3]
+    from_relations = p[4]
+    where = p[5]
+    group_by = p[6]
+    having = p[7]
+
+    # Reduce the implicit join relations
+    from_ = None
+    for relation in from_relations:
+        from_ = Join(p.lineno(4), p.lexpos(4), join_type="IMPLICIT", left=from_, right=relation)
+
+    p[0] = QuerySpecification(p.lineno(1), p.lexpos(1),
+        select=Select(p.lineno(1), p.lexpos(1), distinct=distinct, select_items=select_items),
+        from_=from_,
+        where=where,
+        group_by=group_by,
+        having=having)
 
 
 def p_from_opt(p):
@@ -325,9 +343,9 @@ def p_set_quantifier_opt(p):
 
 def p_select_item(p):
     r"""select_item
-            : expression alias_opt #selectSingle
-            | qualified_name '.' ASTERISK    #selectAll
-            | ASTERISK                       #selectAll"""
+            : expression alias_opt
+            | qualified_name '.' ASTERISK
+            | ASTERISK"""
     if len(p) == 3:
         p[0] = SingleColumn(p.lineno(1), p.lexpos(1), alias=p[2], expression=p[1])
     else:
@@ -341,11 +359,14 @@ def p_alias_opt(p):
     else:
         p[0] = None
 
+
  def p_relation(p):
     r"""relation
             : join_relation
             | aliased__relation
     """
+    p[0] = p[1]
+
 
 def p_join_relation(p):
     r"""join_relation :
@@ -393,133 +414,188 @@ def p_join_criteria(p):
 
 
 def p_aliased_relation(p):
-    r"""aliased_relation : relation_primary alias_opt"""
+    r"""aliased_relation : relation_primary correlation_alias_opt"""
     p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[1],
                            alias=p[2].alias, column_names=p[2].column_names)
 
-def p_alias_opt(p):
-    r"""alias_opt : as_opt identifier column_aliases_opt"""
+
+# Notes: 'AS' in as_opt not supported on most databases
+# Column list (aka derived column list) not supported by many databases
+def p_correlation_alias_opt(p):
+    r"""correlation_alias_opt : as_opt identifier column_list_opt"""
     # Note: We are just using Node for this one rather than creating a new class
     p[0] = Node(p.lineno(1), p.lexpos(1), alias=p[2], column_names=p[3])
 
 
-def p_column_aliases_opt(p):
-    r"""column_aliases_opt
-            : LPAREN identifiers RPAREN
-            | empty"""
-    p[0] = p[1]
+def p_column_list_opt(p):
+    r"""column_list_opt : LPAREN identifiers RPAREN | empty"""
+    p[0] = p[2] if p[1] else None
+
 
 def p_identifiers(p):
     r"""identifiers : identifier | identifiers COMMA identifier"""
     _item_list(p)
 
-    ## """relationPrimary
-    ##     : qualified_name                                                   #tableName
-    ##     | LPAREN query RPAREN                                                   #subqueryRelation
-    ##     | LPAREN relation RPAREN                                                #parenthesizedRelation
-    ##     """
 
-    ## """espressions: expression | expressions COMMA expression
+def p_relation_primary(p):
+    r"""relation_primary
+            : qualified_name
+            | LPAREN query RPAREN
+            | LPAREN relation RPAREN"""
+    p[0] = p[1] if len(p) == 2 else p[2]
 
-    ## """expression : boolean_expression"""
+def p_expressions(p):
+    r"""expressions: expression | expressions COMMA expression"""
+    _item_list(p)
+
+def p_expression(p):
+    r"""expression : boolean_expression"""
+    p[0] = p[1]
+
+def p_boolean_expression(p):
+    r"""boolean_expression
+            : or_expression
+            | boolean_expression AND or_expression"""
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = LogicalBinaryExpression(p.lineno(1), p.lexpos(1), type="AND", left=p[1], right=p[2])
+
+def p_or_expression(p):
+    r"""or_expression
+            : simple_expression
+            | or_expression OR simple_expression"""
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = LogicalBinaryExpression(p.lineno(1), p.lexpos(1), type="OR", left=p[1], right=p[2])
 
 
-    ## """boolean_expression
-    ##     : or_expression                                    #booleanDefault
-    ##     | boolean_expression AND or_expression             #logicalBinary
+def p_simple_expression(p):
+    r"""simple_expression
+            : predicated                                                   #booleanDefault
+            | NOT boolean_expression                                        #logicalNot
+            | EXISTS LPAREN query RPAREN                                         #exists"""
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = NotExpression(p.lineno(1), p.lexpos(1), value=p[2])
+    else:
+        p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[3])
 
-    ## """or_expression
-    ##     : simple_expression                                #booleanDefault
-    ##     | or_expression OR simple_expression               #logicalBinary
+def p_predicated(p):
+    r"""predicated
+           : value_expression predicate[$value_expression.ctx]?"""
 
-    ## """simple_expression
-    ##     : predicated                                                   #booleanDefault
-    ##     | NOT boolean_expression                                        #logicalNot
-    ##     | EXISTS '(' query ')'                                         #exists"""
-
-    ## """predicated
-    ##     : value_expression predicate[$value_expression.ctx]?"""
 
     ## """predicate[ParserRuleContext value]
-    ##     : comparisonOperator right=value_expression                            #comparison
-    ##     | NOT? BETWEEN lower=value_expression AND upper=value_expression        #between
-    ##     | NOT? IN '(' expression (',' expression)* ')'                        #inList
-    ##     | NOT? IN '(' query ')'                                               #inSubquery
-    ##     | NOT? LIKE pattern=value_expression (ESCAPE escape=value_expression)?  #like
-    ##     | IS NOT? NULL                                                        #nullPredicate
-    ##     | IS NOT? DISTINCT FROM right=value_expression                         #distinctFrom"""
+    ##     : comparison_operator value_expression                            #comparison
+    ##     | not_opt BETWEEN value_expression AND value_expression        #between
+    ##     | not_opt IN LPAREN expressions RPAREN                        #inList
+    ##     | not_opt IN LPAREN query RPAREN                                               #inSubquery
+    ##     | not_opt LIKE value_expression (ESCAPE value_expression)?  #like
+    ##     | IS not_opt NULL                                                        #nullPredicate
+    ##     | IS not_opt DISTINCT FROM value_expression                         #distinctFrom"""
 
     ## """value_expression
     ##     : primaryExpression                                                                 #value_expressionDefault
     ##     | value_expression AT timezone_specifier                                              #atTimeZone
-    ##     | operator=(MINUS | PLUS) value_expression                                           #arithmeticUnary
-    ##     | left=value_expression operator=(ASTERISK | SLASH | PERCENT) right=value_expression  #arithmeticBinary
-    ##     | left=value_expression operator=(PLUS | MINUS) right=value_expression                #arithmeticBinary
-    ##     | left=value_expression CONCAT right=value_expression                                 #concatenation"""
+    ##     | (MINUS | PLUS) value_expression                                           #arithmeticUnary
+    ##     | value_expression (ASTERISK | SLASH | PERCENT)   value_expression  #arithmeticBinary
+    ##     | value_expression (PLUS | MINUS) value_expression                #arithmeticBinary
+    ##     | value_expression CONCAT value_expression                                 #concatenation"""
 
-    ## """primaryExpression
-    ##     : NULL                                                                           #nullLiteral
-    ##     | interval                                                                       #intervalLiteral
-    ##     | identifier STRING                                                              #typeConstructor
-    ##     | number                                                                         #numericLiteral
-    ##     | booleanValue                                                                   #booleanLiteral
-    ##     | STRING                                                                         #stringLiteral
-    ##     | BINARY_LITERAL                                                                 #binaryLiteral
-    ##     | POSITION '(' value_expression IN value_expression ')'                            #position
+
+
+
+# TODO : Check Expressions and Kleene Star/One or more behavior
+
+## """primaryExpression
+    ##     | POSITION LPAREN value_expression IN value_expression RPAREN                      #position
     ##     | '(' expression (',' expression)+ ')'                                           #rowConstructor
-    ##     | ROW '(' expression (',' expression)* ')'                                       #rowConstructor
-    ##     | qualified_name '(' ASTERISK ')'                                            #functionCall
-    ##     | qualified_name '(' (    set_quantifier_opt expression (',' expression)*)? ')'     #functionCall
-    ##     | identifier '->' expression                                                     #lambda
-    ##     | '(' identifier (',' identifier)* ')' '->' expression                           #lambda
-    ##     | '(' query ')'                                                                  #subqueryExpression
-    ##     | CASE value_expression whenClause+ (ELSE elseExpression=expression)? END         #simpleCase
-    ##     | CASE whenClause+ (ELSE elseExpression=expression)? END                         #searchedCase
-    ##     | CAST '(' expression AS type ')'                                                #cast
-    ##     | TRY_CAST '(' expression AS type ')'                                            #cast
-    ##     | ARRAY '[' (expression (',' expression)*)? ']'                                  #arrayConstructor
-    ##     | value=primaryExpression '[' index=value_expression ']'                          #subscript
+    ##     | ROW LPAREN expressions RPAREN                                       #rowConstructor
+    ##     | qualified_name LPAREN ASTERISK RPAREN                                            #functionCall
+    ##     | qualified_name LPAREN ( set_quantifier_opt expressions)? RPAREN     #functionCall
+    ##     | LPAREN query RPAREN                                                               #subqueryExpression
+    ##     | CASE value_expression when_clause+ else_opt END         #simpleCase
+    ##     | CASE whenClause+ else_opt END                         #searchedCase
+    ##     | CAST RPAREN expression AS type LPAREN                                                #cast
+    ##     | TRY_CAST LPAREN expression AS type RPAREN                                            #cast
+
     ##     | identifier                                                                     #columnReference
-    ##     | base=primaryExpression '.' fieldName=identifier                                #dereference
-    ##     | name=CURRENT_DATE                                                              #specialDateTimeFunction
-    ##     | name=CURRENT_TIME ('(' precision=INTEGER_VALUE ')')?                           #specialDateTimeFunction
-    ##     | name=CURRENT_TIMESTAMP ('(' precision=INTEGER_VALUE ')')?                      #specialDateTimeFunction
-    ##     | name=LOCALTIME ('(' precision=INTEGER_VALUE ')')?                              #specialDateTimeFunction
-    ##     | name=LOCALTIMESTAMP ('(' precision=INTEGER_VALUE ')')?                         #specialDateTimeFunction
-    ##     | SUBSTRING '(' value_expression FROM value_expression (FOR value_expression)? ')'  #substring
-    ##     | NORMALIZE '(' value_expression (',' normalForm)? ')'                            #normalize
-    ##     | EXTRACT '(' identifier FROM value_expression ')'                                #extract
-    ##     | '(' expression ')'                                                             #parenthesizedExpression"""
+    ##     | primary_expression . identifier                                #dereference
+    ##     | SUBSTRING LPAREN value_expression FROM value_expression (FOR value_expression)? RPAREN  #substring
+    ##     | LPAREN expression RPAREN                                                             #parenthesizedExpression"""
+    ##     | CURRENT_DATE                                                              #specialDateTimeFunction
+    ##     | CURRENT_TIME    integer_param_opt                           #specialDateTimeFunction
+    ##     | CURRENT_TIMESTAMP    integer_param_opt                    #specialDateTimeFunction
+    ##     | LOCALTIME    integer_param_opt                             #specialDateTimeFunction
+    ##     | LOCALTIMESTAMP    integer_param_opt                         #specialDateTimeFunction
+
+    ###     | identifier '->' expression                                                     #lambda
+    ###     | LPAREN identifiers RPAREN '->' expression                           #lambda
+    ###     | ARRAY '[' (expressions)? ']'                                  #arrayConstructor
+    ###     | primary_expression '[' value_expression ']'                          #subscript
+    ###     | NORMALIZE LPAREN value_expression (',' normalForm)? RPAREN                            #normalize
+    ###     | EXTRACT LPAREN identifier FROM value_expression RPAREN                                #extract
+
+def p_literal(p):
+    r"""literal
+            : NULL                                                                           #nullLiteral
+            | number                                                                         #numericLiteral
+            | boolean_value                                                                   #booleanLiteral
+            | STRING                                                                         #stringLiteral
+            | interval                                                                       #intervalLiteral
+            | identifier STRING                                                              #typeConstructor
+            """
+    if p[1].type == "NULL":
+        p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
+    elif p[1].type == "STRING":
+        p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1].value)
+
 
     ## """timezone_specifier
     ##     : TIME ZONE interval  #timeZoneInterval
     ##     | TIME ZONE STRING    #timeZoneString"""
 
+
     ## comparisonOperator
     ##     : EQ | NEQ | LT | LTE | GT | GTE
 
-    ## booleanValue
-    ##     : TRUE | FALSE
+def p_boolean_value(p):
+    r"""boolean_value : TRUE | FALSE"""
+    p[0] = BooleanLiteral(p.lineno(1), p.lexpos(1), p[1])
 
-    ## interval
-    ##     : INTERVAL sign=(PLUS | MINUS)? STRING from=intervalField (TO to=intervalField)?
+def p_interval(p):
+    r"""interval : INTERVAL plus_or_minus_opt STRING interval_field interval_end_opt"""
+    sign = p[2] or "+"
+    p[0] = IntervalLiteral(p.lineno(1), p.lexpos(1), value=p[3], sign=p[2], start_field=p[4], end_field=p[5])
 
-    ## intervalField
-    ##     : YEAR | MONTH | DAY | HOUR | MINUTE | SECOND
+def p_interval_end_opt(p):
+    r"""interval_end_opt : TO interval_field | empty"""
+    p[0] = p[2] if p[1] else None
+
+def p_interval_field(p):
+    r"""intervalField : YEAR | MONTH | DAY | HOUR | MINUTE | SECOND"""
+    p[0] = p[1]
+
+def p_plus_or_minus_opt(p):
+    r"""plus_or_minus_opt : PLUS | MINUS | empty"""
+    p[0] = p[1]
 
 
 def p_table_element(p):
     """table_element : IDENTIFIER type"""
-    p[0] = TableElement(line=p.lineno(1), pos=p.lexpos(1), name=p[1], typedef=p[2])
+    p[0] = TableElement(p.lineno(1), p.lexpos(1), name=p[1], typedef=p[2])
 
 
 def p_type(p):
-    """type : base_type type_parameter_opt"""
+    """type : base_type integer_parameter_opt"""
     p[0] = "%s%s" % (p[1], p[2] or '')
 
 
-def p_type_parameter_opt(p):
-    """type_parameter_opt : LPAREN INTEGER RPAREN
+def p_integer_parameter_opt(p):
+    """integer_parameter_opt : LPAREN INTEGER RPAREN
                           | empty"""
     p[0] = "(%s)" % p[2] if p[1] else None
 
@@ -529,80 +605,59 @@ def p_base_type(p):
     p[0] = p[1]
 
 
-
-# p_type
-
-# p_type_parameter_opt
-
-# p_base_type
-
-    ## whenClause
-    ##     : WHEN condition=expression THEN result=expression
+def p_when_clause(p):
+    r"""when_clause : WHEN expression THEN expression"""
+    p[0] = WhenClause(p.lineno(1), p.lexpos(1), operand=p[2], result=p[4])
 
 
-    ## explain_option
-    ##     : FORMAT value=(TEXT | GRAPHVIZ)         #explainFormat
-    ##     | TYPE value=(LOGICAL | DISTRIBUTED)     #explainType
-
-
-    ## transactionMode
-    ##     : ISOLATION LEVEL levelOfIsolation    #isolationLevel
-    ##     | READ accessMode=(ONLY | WRITE)      #transactionAccessMode
-
-    ## levelOfIsolation
-    ##     : READ UNCOMMITTED                    #readUncommitted
-    ##     | READ COMMITTED                      #readCommitted
-    ##     | REPEATABLE READ                     #repeatableRead
-    ##     | SERIALIZABLE                        #serializable
+    ### explain_option
+    ###     : FORMAT value=(TEXT | GRAPHVIZ)         #explainFormat
+    ###     | TYPE value=(LOGICAL | DISTRIBUTED)     #explainType
+    ### transactionMode
+    ###     : ISOLATION LEVEL levelOfIsolation    #isolationLevel
+    ###     | READ accessMode=(ONLY | WRITE)      #transactionAccessMode
+    ### levelOfIsolation
+    ###     : READ UNCOMMITTED                    #readUncommitted
+    ###     | READ COMMITTED                      #readCommitted
+    ###     | REPEATABLE READ                     #repeatableRead
+    ###     | SERIALIZABLE                        #serializable
 
     ## callArgument
     ##     : expression                    #positionalArgument
     ##     | identifier '=>' expression    #namedArgument
 
-    ## qualified_name
-    ##     : identifier ('.' identifier)*
+def p_qualified_name(p):
+    r"""qualified_name : identifier | qualified_name . identifier"""
+    return _item_list(p)
 
-    ## identifier
-    ##     : IDENTIFIER             #unquotedIdentifier
-    ##     | quotedIdentifier       #quotedIdentifierAlternative
-    ##     | nonReserved            #unquotedIdentifier
-    ##     | BACKQUOTED_IDENTIFIER  #backQuotedIdentifier
-    ##     | DIGIT_IDENTIFIER       #digitIdentifier
+def p_identifier(p):
+    r"""identifier
+            : IDENTIFIER
+            | quoted_identifier
+            | non_reserved
+            | BACKQUOTED_IDENTIFIER
+            | DIGIT_IDENTIFIER"""
+    p[0] = p[1]
 
-    ## quotedIdentifier
-    ##     : QUOTED_IDENTIFIER
+def p_quoted_identifier(p):
+    r"""quoted_identifier : QUOTED_IDENTIFIER"""
+    p[0] = p[1]
 
-    ## number
-    ##     : DECIMAL_VALUE  #decimalLiteral
-    ##     | INTEGER_VALUE  #integerLiteral
+def p_number(p):
+    r"""number : DECIMAL_VALUE | INTEGER_VALUE"""
+    if p.type == "DECIMAL_VALUE":
+        p[0] = DoubleLiteral(p.lineno(1), p.lexpos(1), p[1])
+    else:
+        p[0] = LongLiteral(p.lineno(1), p.lexpos(1), p[1])
 
-
-    ## normalForm
-    ##     : NFD | NFC | NFKD | NFKC
-
-
-    ## IF: 'IF';
-    ## NULLIF: 'NULLIF';
-    ## COALESCE: 'COALESCE';
-
-    ## EQ  : '=';
-    ## NEQ : '<>' | '!=';
-    ## LT  : '<';
-    ## LTE : '<=';
-    ## GT  : '>';
-    ## GTE : '>=';
-
-    ## PLUS: '+';
-    ## MINUS: '-';
-    ## ASTERISK: '*';
-    ## SLASH: '/';
-    ## PERCENT: '%';
-    ## CONCAT: '||';
+def
 
     ## STRING
     ##     : '\'' ( ~'\'' | '\'\'' )* '\''
     ##     ;
 
+    ## normalForm
+    ##     : NFD | NFC | NFKD | NFKC
     ## // Note: we allow any character inside the binary literal and validate
     ## // its a correct literal when the AST is being constructed. This
     ## // allows us to provide more meaningful error messages to the user
@@ -617,7 +672,6 @@ def p_base_type(p):
     ## TIMESTAMP_WITH_TIME_ZONE
     ##     : 'TIMESTAMP' WS 'WITH' WS 'TIME' WS 'ZONE'
     ##     ;
-
 
     ## WS
     ##     : [ \r\n\t]+ -> channel(HIDDEN)
