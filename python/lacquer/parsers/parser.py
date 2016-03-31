@@ -16,6 +16,8 @@ tokens = ['INTEGER',               'DECIMAL',
           'GT',                    'GE',
           'LT',                    'LE',
           'EQ',                    'NE',
+          'CONCAT',                'SLASH',
+          'ASTERISK',              'PERCENT',
           ] + reserved + list(presto_nonreserved)
 
 _exponent = r'[eE][+-]?\d+'
@@ -36,13 +38,13 @@ t_LE = r'<='
 t_GT = r'>'
 t_GE = r'>='
 
-t_PLUS = r'+'
+t_PLUS = r'\+'
 t_MINUS = r'-'
-t_ASTERISK = r'*'
+t_ASTERISK = r'\*'
 t_SLASH = r'/'
 t_PERCENT = r'%'
 
-t_CONCAT = r'||'
+t_CONCAT = r'\|\|'
 
 t_ignore = ' \t'
 
@@ -360,11 +362,8 @@ def p_alias_opt(p):
         p[0] = None
 
 
- def p_relation(p):
-    r"""relation
-            : join_relation
-            | aliased__relation
-    """
+def p_relation(p):
+    r"""relation : join_relation | aliased__relation"""
     p[0] = p[1]
 
 
@@ -576,7 +575,7 @@ def p_interval_end_opt(p):
     p[0] = p[2] if p[1] else None
 
 def p_interval_field(p):
-    r"""intervalField : YEAR | MONTH | DAY | HOUR | MINUTE | SECOND"""
+    r"""interval_field : YEAR | MONTH | DAY | HOUR | MINUTE | SECOND"""
     p[0] = p[1]
 
 def p_plus_or_minus_opt(p):
@@ -650,7 +649,7 @@ def p_number(p):
     else:
         p[0] = LongLiteral(p.lineno(1), p.lexpos(1), p[1])
 
-def
+#def
 
     ## STRING
     ##     : '\'' ( ~'\'' | '\'\'' )* '\''
@@ -697,8 +696,5 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-print "1:"
-print parser.parse("Foo INTEGER", tracking=True)
-#print parser.parse("Name INTEGER(1)", tracking=True)
-print "2:"
-print parser.parse("Bar Double(123)", tracking=True)
+print parser.parse("select 1 from dual", tracking=True)
+
