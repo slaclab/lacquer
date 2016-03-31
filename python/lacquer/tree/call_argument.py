@@ -10,8 +10,7 @@ class CallArgument(Node):
     def accept(self, visitor, context):
         visitor.visit_call_argument(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("name", name).add("value", value).omitNullValues().toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("name", name).add("value", value).omitNullValues().toString();
+    #     """

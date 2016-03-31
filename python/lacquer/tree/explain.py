@@ -14,11 +14,10 @@ class ExplainType(ExplainOption):
         super(ExplainType, self).__init__(line, pos)
         self.type = type
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("type", type).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("type", type).toString();
+    #     """
 
 
 class ExplainFormat(ExplainOption):
@@ -26,9 +25,8 @@ class ExplainFormat(ExplainOption):
         super(ExplainFormat, self).__init__(line, pos)
         self.type = type
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("type", type).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("type", type).toString();
+    #     """
 

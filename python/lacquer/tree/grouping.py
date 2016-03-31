@@ -5,8 +5,8 @@ class GroupingElement(Node):
     def __init__(self, line=None, pos=None):
         super(GroupingElement, self).__init__(line, pos)
 
-    def enumerate_grouping_sets(self):
-        pass
+    # def enumerate_grouping_sets(self):
+    #     pass
 
 
 class GroupingSets(GroupingElement):
@@ -14,14 +14,13 @@ class GroupingSets(GroupingElement):
         super(GroupingSets, self).__init__(line, pos)
         self.sets = sets
 
-    def enumerate_grouping_sets(self):
-        pass
+    # def enumerate_grouping_sets(self):
+    #     pass
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("sets", sets).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("sets", sets).toString();
+    #     """
 
 
 class SimpleGroupBy(GroupingElement):
@@ -29,11 +28,10 @@ class SimpleGroupBy(GroupingElement):
         super(SimpleGroupBy, self).__init__(line, pos)
         self.columns = columns
 
-    def enumerate_grouping_sets(self):
-        pass
+    # def enumerate_grouping_sets(self):
+    #     pass
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("columns", columns).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("columns", columns).toString();
+    #     """

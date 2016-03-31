@@ -16,13 +16,7 @@ class AllColumns(SelectItem):
         visitor.visit_all_columns(self, context)
 
     def __str__(self):
-        """
-        if (prefix != null) {
-            return prefix + ".*";
-        }
-        return "*";
-        """
-        pass
+        return "%s*" % (self.prefix + ".") if self.prefix else ""
 
 
 class SingleColumn(SelectItem):
@@ -35,10 +29,4 @@ class SingleColumn(SelectItem):
         visitor.visit_single_column(self, context)
 
     def __str__(self):
-        """
-        if (alias != null) {
-            return expression.toString() + " " + alias;
-        }
-        return expression.toString();
-        """
-        pass
+        return str(self.expression) + (" " + self.alias) if self.alias else ""

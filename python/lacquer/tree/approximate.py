@@ -9,8 +9,7 @@ class Approximate(Node):
     def accept(self, visitor, context):
         visitor.visit_approximate(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("confidence", confidence).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("confidence", confidence).toString();
+    #     """

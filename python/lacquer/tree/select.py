@@ -1,4 +1,4 @@
-from . import Node
+from .node import Node
 
 
 class Select(Node):
@@ -7,15 +7,12 @@ class Select(Node):
         self.distinct = distinct
         self.select_items = select_items
 
-    def is_distinct(self):
-        pass
-
     def accept(self, visitor, context):
         visitor.visit_select(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this)
-            .add("distinct", distinct).add("selectItems", selectItems).omitNullValues().toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this)
+    #         .add("distinct", distinct).add("selectItems", selectItems).omitNullValues().toString();
+    #     """
+

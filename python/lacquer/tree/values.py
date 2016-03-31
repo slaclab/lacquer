@@ -10,7 +10,4 @@ class Values(QueryBody):
         visitor.visit_values(self, context)
 
     def __str__(self):
-        """
-        return "(" + Joiner.on(", ").join(rows) + ")";
-        """
-        pass
+        return "(" + ", ".join(self.rows or []) + ")"

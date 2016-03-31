@@ -11,9 +11,8 @@ class SortItem(Node):
     def accept(self, visitor, context):
         visitor.visit_sort_item(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("sortKey", sortKey)
-            .add("ordering", ordering).add("nullOrdering", nullOrdering).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("sortKey", sortKey)
+    #         .add("ordering", ordering).add("nullOrdering", nullOrdering).toString();
+    #     """

@@ -16,10 +16,9 @@ class QuerySpecification(QueryBody):
     def accept(self, visitor, context):
         visitor.visit_query_specification(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("select", select).add("from", from).add("where", where.orNull())
-            .add("groupBy", groupBy).add("having", having.orNull()).add("orderBy", orderBy)
-            .add("limit", limit.orNull()).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("select", select).add("from", from).add("where", where.orNull())
+    #         .add("groupBy", groupBy).add("having", having.orNull()).add("orderBy", orderBy)
+    #         .add("limit", limit.orNull()).toString();
+    #     """

@@ -1,3 +1,4 @@
+from inspect import getargspec
 
 
 class Node(object):
@@ -12,13 +13,15 @@ class Node(object):
         visitor.visit_node(self, context)
 
     def __str__(self):
-        return str(self.__dict__)
+        return str({k: v for k, v in self.__dict__.items() if v})
 
     def __repr__(self):
-        return repr(self.__dict__)
+        clz = self.__class__
+        argspec = [x for x in getargspec(clz.__init__).args[3:] if self.__dict__[x]]
+        args = ", ".join(["=".join((arg, repr(getattr(self, arg)))) for arg in argspec])
+        return "{name}({args})".format(name=clz.__name__, args=args)
 
-
-#class NodeLocation:
+# class NodeLocation:
 #    def __init__(self, line=None, pos=None, line=None, char_position_in_line=None):
 #        self.line = line
 #        self.pos = pos

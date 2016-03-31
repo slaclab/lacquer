@@ -1,4 +1,5 @@
 from .node import Node
+from six import integer_types
 
 
 class Literal(Node):
@@ -14,8 +15,8 @@ class IntervalLiteral(Literal):
         self.start_field = start_field
         self.end_field = end_field
 
-    def is_year_to_month(self):
-        pass
+    # def is_year_to_month(self):
+    #     pass
 
     def accept(self, visitor, context):
         visitor.visit_interval_literal(self, context)
@@ -41,20 +42,20 @@ class NullLiteral(Literal):
 class DoubleLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
         super(DoubleLiteral, self).__init__(line, pos)
-        self.value = value
+        self.value = float(value)
 
     def accept(self, visitor, context):
         visitor.visit_double_literal(self, context)
 
 
-class GenericLiteral(Literal):
-    def __init__(self, line=None, pos=None, type=None, value=None):
-        super(GenericLiteral, self).__init__(line, pos)
-        self.type = type
-        self.value = value
-
-    def accept(self, visitor, context):
-        visitor.visit_generic_literal(self, context)
+# class GenericLiteral(Literal):
+#     def __init__(self, line=None, pos=None, type=None, value=None):
+#         super(GenericLiteral, self).__init__(line, pos)
+#         self.type = type
+#         self.value = value
+#
+#     def accept(self, visitor, context):
+#         visitor.visit_generic_literal(self, context)
 
 
 class StringLiteral(Literal):
@@ -74,14 +75,20 @@ class TimeLiteral(Literal):
     def accept(self, visitor, context):
         visitor.visit_time_literal(self, context)
 
+    def __str__(self):
+        return "TIME '%s'" % self.value
+
 
 class LongLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
         super(LongLiteral, self).__init__(line, pos)
-        self.value = value
+        self.value = integer_types[-1](value)
 
     def accept(self, visitor, context):
         visitor.visit_long_literal(self, context)
+
+    def __str__(self):
+        return self.value
 
 
 class BooleanLiteral(Literal):
@@ -91,8 +98,7 @@ class BooleanLiteral(Literal):
     """
     def __init__(self, line=None, pos=None, value=None):
         super(BooleanLiteral, self).__init__(line, pos)
-        self.value = value
+        self.value = value.lower() == "true"
 
     def accept(self, visitor, context):
         visitor.visit_boolean_literal(self, context)
-

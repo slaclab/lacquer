@@ -17,11 +17,10 @@ class Isolation(TransactionMode):
     def accept(self, visitor, context):
         visitor.visit_isolation(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("level", level).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("level", level).toString();
+    #     """
 
 
 class TransactionAccessMode(TransactionMode):
@@ -35,8 +34,7 @@ class TransactionAccessMode(TransactionMode):
     def accept(self, visitor, context):
         visitor.visit_transaction_access_mode(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("readOnly", readOnly).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("readOnly", readOnly).toString();
+    #     """

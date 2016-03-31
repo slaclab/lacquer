@@ -18,11 +18,10 @@ class Delete(Statement):
     def accept(self, visitor, context):
         visitor.visit_delete(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("table", table.getName()).add("where", where).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("table", table.getName()).add("where", where).toString();
+    #     """
 
     
 class Query(Statement):
@@ -37,13 +36,12 @@ class Query(Statement):
     def accept(self, visitor, context):
         visitor.visit_query(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("with", with.orNull())
-            .add("queryBody", queryBody).add("orderBy", orderBy).add("limit", limit.orNull())
-            #.add("approximate", approximate.orNull()).#omitNullValues().toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("with", with.orNull())
+    #         .add("queryBody", queryBody).add("orderBy", orderBy).add("limit", limit.orNull())
+    #         #.add("approximate", approximate.orNull()).#omitNullValues().toString();
+    #     """
 
     
 class Insert(Statement):
@@ -56,14 +54,13 @@ class Insert(Statement):
     def accept(self, visitor, context):
         visitor.visit_insert(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).
-            add("target", target).add("columns", columns).add("query", query).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).
+    #         add("target", target).add("columns", columns).add("query", query).toString();
+    #     """
 
-    
+
 class ShowColumns(Statement):
     def __init__(self, line=None, pos=None, table=None):
         super(ShowColumns, self).__init__(line, pos)
@@ -72,12 +69,10 @@ class ShowColumns(Statement):
     def accept(self, visitor, context):
         visitor.visit_show_columns(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("table", table).toString();
-        """
-        pass
-
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("table", table).toString();
+    #     """
 
 class RenameTable(Statement):
     def __init__(self, line=None, pos=None, source=None, target=None):
@@ -88,11 +83,10 @@ class RenameTable(Statement):
     def accept(self, visitor, context):
         visitor.visit_rename_table(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("source", source).add("target", target).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("source", source).add("target", target).toString();
+    #     """
 
 
 class CreateTable(Statement):
@@ -103,18 +97,17 @@ class CreateTable(Statement):
         self.not_exists = not_exists
         self.properties = properties
 
-    def is_not_exists(self):
-        pass
+    # def is_not_exists(self):
+    #     pass
 
     def accept(self, visitor, context):
         visitor.visit_create_table(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("name", name)
-            .add("elements", elements).add("notExists", notExists).add("properties", properties).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("name", name)
+    #         .add("elements", elements).add("notExists", notExists).add("properties", properties).toString();
+    #     """
 
     
 class DropView(Statement):
@@ -123,17 +116,16 @@ class DropView(Statement):
         self.name = name
         self.exists = exists
 
-    def is_exists(self):
-        pass
+    # def is_exists(self):
+    #     pass
 
     def accept(self, visitor, context):
         visitor.visit_drop_view(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("name", name).add("exists", exists).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("name", name).add("exists", exists).toString();
+    #     """
 
 
 class Rollback(Statement):
@@ -143,11 +135,10 @@ class Rollback(Statement):
     def accept(self, visitor, context):
         visitor.visit_rollback(self, context)
 
-    def __str__(self):
-        """
-        return "ROLLBACK";
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return "ROLLBACK";
+    #     """
 
 
 class ShowSession(Statement):
@@ -157,11 +148,10 @@ class ShowSession(Statement):
     def accept(self, visitor, context):
         visitor.visit_show_session(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).toString();
+    #     """
 
 
 class Call(Statement):
@@ -173,11 +163,10 @@ class Call(Statement):
     def accept(self, visitor, context):
         visitor.visit_call(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("name", name).add("arguments", arguments).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("name", name).add("arguments", arguments).toString();
+    #     """
 
 
 class Use(Statement):
@@ -189,11 +178,10 @@ class Use(Statement):
     def accept(self, visitor, context):
         visitor.visit_use(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).toString();
+    #     """
 
     
 class ShowPartitions(Statement):
@@ -207,12 +195,11 @@ class ShowPartitions(Statement):
     def accept(self, visitor, context):
         visitor.visit_show_partitions(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this)
-            .add("table", table).add("where", where).add("orderBy", orderBy).add("limit", limit).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this)
+    #         .add("table", table).add("where", where).add("orderBy", orderBy).add("limit", limit).toString();
+    #     """
 
 
 class ShowCatalogs(Statement):
@@ -222,11 +209,10 @@ class ShowCatalogs(Statement):
     def accept(self, visitor, context):
         visitor.visit_show_catalogs(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).toString();
+    #     """
 
 
 class StartTransaction(Statement):
@@ -237,11 +223,10 @@ class StartTransaction(Statement):
     def accept(self, visitor, context):
         visitor.visit_start_transaction(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("transactionModes", transactionModes).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("transactionModes", transactionModes).toString();
+    #     """
 
 
 class CreateView(Statement):
@@ -251,18 +236,17 @@ class CreateView(Statement):
         self.query = query
         self.replace = replace
 
-    def is_replace(self):
-        pass
+    # def is_replace(self):
+    #     pass
 
     def accept(self, visitor, context):
         visitor.visit_create_view(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this)
-            .add("name", name).add("query", query).add("replace", replace).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this)
+    #         .add("name", name).add("query", query).add("replace", replace).toString();
+    #     """
 
 
 class SetSession(Statement):
@@ -274,11 +258,10 @@ class SetSession(Statement):
     def accept(self, visitor, context):
         visitor.visit_set_session(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("name", name).add("value", value).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("name", name).add("value", value).toString();
+    #     """
 
 
 class CreateTableAsSelect(Statement):
@@ -289,18 +272,17 @@ class CreateTableAsSelect(Statement):
         self.properties = properties
         self.with_data = with_data
 
-    def is_with_data(self):
-        pass
+    # def is_with_data(self):
+    #     pass
 
     def accept(self, visitor, context):
         visitor.visit_create_table_as_select(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).
-             add("name", name).add("query", query).add("properties", properties).add("withData", withData).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).
+    #          add("name", name).add("query", query).add("properties", properties).add("withData", withData).toString();
+    #     """
 
 
 class RenameColumn(Statement):
@@ -329,11 +311,10 @@ class ResetSession(Statement):
     def accept(self, visitor, context):
         visitor.visit_reset_session(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("name", name).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("name", name).toString();
+    #     """
 
 
 class ShowSchemas(Statement):
@@ -348,7 +329,6 @@ class ShowSchemas(Statement):
         """
         return MoreObjects.toStringHelper(this).toString();
         """
-        pass
 
 
 class DropTable(Statement):
@@ -357,17 +337,13 @@ class DropTable(Statement):
         self.table_name = table_name
         self.exists = exists
 
-    def is_exists(self):
-        pass
-
     def accept(self, visitor, context):
         visitor.visit_drop_table(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("tableName", tableName).add("exists", exists).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("tableName", tableName).add("exists", exists).toString();
+    #     """
 
 
 class ShowTables(Statement):
@@ -379,11 +355,10 @@ class ShowTables(Statement):
     def accept(self, visitor, context):
         visitor.visit_show_tables(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("schema", schema).add("likePattern", likePattern).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("schema", schema).add("likePattern", likePattern).toString();
+    #     """
 
 
 class Explain(Statement):
@@ -395,11 +370,10 @@ class Explain(Statement):
     def accept(self, visitor, context):
         visitor.visit_explain(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("statement", statement).add("options", options).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("statement", statement).add("options", options).toString();
+    #     """
 
 
 class AddColumn(Statement):
@@ -411,11 +385,10 @@ class AddColumn(Statement):
     def accept(self, visitor, context):
         visitor.visit_add_column(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("name", name).add("column", column).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("name", name).add("column", column).toString();
+    #     """
 
 
 class Commit(Statement):
@@ -425,11 +398,10 @@ class Commit(Statement):
     def accept(self, visitor, context):
         visitor.visit_commit(self, context)
 
-    def __str__(self):
-        """
-        return "COMMIT";
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return "COMMIT";
+    #     """
 
 
 class ShowFunctions(Statement):
@@ -439,8 +411,7 @@ class ShowFunctions(Statement):
     def accept(self, visitor, context):
         visitor.visit_show_functions(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).toString();
+    #     """

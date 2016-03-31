@@ -9,11 +9,10 @@ class Table(QueryBody):
     def accept(self, visitor, context):
         visitor.visit_table(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).addValue(name).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).addValue(name).toString();
+    #     """
 
 
 class TableSubquery(QueryBody):
@@ -24,8 +23,7 @@ class TableSubquery(QueryBody):
     def accept(self, visitor, context):
         visitor.visit_table_subquery(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).addValue(query).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).addValue(query).toString();
+    #     """

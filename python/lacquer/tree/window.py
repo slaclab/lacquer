@@ -11,14 +11,13 @@ class Window(Node):
     def accept(self, visitor, context):
         visitor.visit_window(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this)
-            #.add("partitionBy", partitionBy)
-            .add("orderBy", orderBy)
-            .add("frame", frame).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this)
+    #         #.add("partitionBy", partitionBy)
+    #         .add("orderBy", orderBy)
+    #         .add("frame", frame).toString();
+    #     """
 
 
 class WindowFrame(Node):
@@ -31,11 +30,10 @@ class WindowFrame(Node):
     def accept(self, visitor, context):
         visitor.visit_window_frame(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("type", type).add("start", start).add("end", end).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("type", type).add("start", start).add("end", end).toString();
+    #     """
 
 
 class FrameBound(Node):
@@ -47,8 +45,7 @@ class FrameBound(Node):
     def accept(self, visitor, context):
         visitor.visit_frame_bound(self, context)
 
-    def __str__(self):
-        """
-        return MoreObjects.toStringHelper(this).add("type", type).add("value", value).toString();
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return MoreObjects.toStringHelper(this).add("type", type).add("value", value).toString();
+    #     """

@@ -8,11 +8,10 @@ class Expression(Node):
     def accept(self, visitor, context):
         visitor.visit_expression(self, context)
 
-    def __str__(self):
-        """
-        return ExpressionFormatter.formatExpression(this);
-        """
-        pass
+    # def __str__(self):
+    #     """
+    #     return ExpressionFormatter.formatExpression(this);
+    #     """
 
     
 class Extract(Expression):
@@ -136,8 +135,8 @@ class Cast(Expression):
         self.type = type
         self.safe = safe
 
-    def is_safe(self):
-        pass
+    # def is_safe(self):
+    #     pass
 
     def accept(self, visitor, context):
         visitor.visit_cast(self, context)
@@ -160,9 +159,6 @@ class FunctionCall(Expression):
         self.distinct = distinct
         self.arguments = arguments
 
-    def is_distinct(self):
-        pass
-
     def accept(self, visitor, context):
         visitor.visit_function_call(self, context)
 
@@ -176,8 +172,8 @@ class DereferenceExpression(Expression):
     def accept(self, visitor, context):
         visitor.visit_dereference_expression(self, context)
 
-    def try_parse_parts(self, base, field_name):
-        pass
+    # def try_parse_parts(self, base, field_name):
+    #     pass
 
     
 class LogicalBinaryExpression(Expression):
@@ -190,11 +186,11 @@ class LogicalBinaryExpression(Expression):
     def accept(self, visitor, context):
         visitor.visit_logical_binary_expression(self, context)
 
-    def and_op(self, left, right):
-        pass
-
-    def or_op(self, left, right):
-        pass
+    # def and_op(self, left, right):
+    #     return type == "AND"
+    #
+    # def or_op(self, left, right):
+    #     return type == "OR"
 
     
 class CoalesceExpression(Expression):
@@ -295,11 +291,11 @@ class ArithmeticUnaryExpression(Expression):
         self.value = value
         self.sign = sign
 
-    def positive(self, value, location=None):
-        pass
-
-    def negative(self, value, location=None):
-        pass
+    # def positive(self, value, location=None):
+    #     pass
+    #
+    # def negative(self, value, location=None):
+    #     pass
 
     def accept(self, visitor, context):
         visitor.visit_arithmetic_unary_expression(self, context)
