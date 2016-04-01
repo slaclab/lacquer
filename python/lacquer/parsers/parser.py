@@ -399,9 +399,9 @@ def p_aliased_relation(p):
     r"""aliased_relation : relation_primary correlation_alias_opt"""
     if p[2]:
         alias = p[2].alias
-        column_names = p[2].column_names
+        #column_names = p[2].column_names
         p[0] = AliasedRelation(p.lineno(1), p.lexpos(1),
-                               relation=p[1], alias=alias, column_names=column_names)
+                               relation=p[1], alias=alias) # , column_names=column_names)
     else:
         p[0] = p[1]
 
@@ -412,7 +412,7 @@ def p_correlation_alias_opt(p):
     r"""correlation_alias_opt : as_opt identifier
                               | empty"""
     # Note: We are just using Node for this one rather than creating a new class
-    p[0] = Node(p.lineno(1), p.lexpos(1), alias=p[2]) if p[1] else None
+    p[0] = Node(p.lineno(1), p.lexpos(1), alias=p[2]) if len(p) == 3 else None
 
 
 def p_relation_primary(p):
@@ -765,8 +765,8 @@ def p_error(p):
 parser = yacc.yacc()
 
 
-print repr(parser.parse("SELECT 1 FROM DUAL", tracking=True))
-print repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True, debug=True))
+#print repr(parser.parse("SELECT 1 FROM DUAL", tracking=True))
+#print repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True))
 #print repr(parser.parse("SELECT (SELECT 2 FROM X)", tracking=True, debug=True))
 #print repr(parser.parse("(SELECT 1)", tracking=True))
 #print repr(parser.parse("SELECT 1, 2", tracking=True))
@@ -776,6 +776,11 @@ print repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True, debug=Tru
 #print repr(parser.parse("SELECT 'hi'", tracking=True))
 #print repr(parser.parse("SELECT `hi`", tracking=True))
 #print parser.parse("SELECT 1, 2 ", tracking=True, debug=True)
-#print parser.parse("SELECT 1 FROM dual.dual.dual", tracking=True)
-#print parser.parse("SELECT 1 FROM dual", tracking=True)
+#print repr(parser.parse("SELECT 1 Y FROM DUAL", tracking=True))
+#print repr(parser.parse("SELECT 1 as Y FROM DUAL", tracking=True))
+#print repr(parser.parse("SELECT 1 FROM dual", tracking=True))
+print repr(parser.parse("SELECT 1 FROM dual x", tracking=True))
+print repr(parser.parse("SELECT 1 FROM dual as x", tracking=True))
+print repr(parser.parse("SELECT 1 FROM dual.dual.dual", tracking=True))
+
 
