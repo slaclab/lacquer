@@ -1,3 +1,4 @@
+from __future__ import print_function
 from ply import lex, yacc
 
 from lacquer.reserved import *
@@ -326,7 +327,6 @@ def p_all_columns(p):
     p[0] = AllColumns(p.lineno(1), p.lexpos(1), prefix=p[1] if len(p) == 4 else None)
 
 
-
 def p_table_expression_opt(p):
     r"""table_expression_opt : FROM relations where_opt group_by_opt having_opt
                              | empty"""
@@ -393,7 +393,7 @@ def p_join_type(p):
 def p_outer_opt(p):
     r"""outer_opt : OUTER
                   | empty"""
-    pass
+    # Ignore
 
 
 def p_join_criteria(p):
@@ -535,6 +535,7 @@ def p_in_expressions(p):
                        | expression"""
     _item_list(p)
 
+
 # TODO: add:    | value_expression not_opt LIKE value_expression_ ESCAPE value_expression
 def p_like_predicate(p):
     r"""like_predicate : value_expression not_opt LIKE value_expression"""
@@ -623,23 +624,25 @@ def p_base_primary_expression(p):
         p[0] = p[1]
 
 
-##     | qualified_name LPAREN ASTERISK RPAREN                #functionCall
-##     |      #functionCall
-##     | LPAREN query RPAREN                                  #subqueryExpression
-##     | CASE value_expression when_clause+ else_opt END      #simpleCase
-##     | CASE whenClause+ else_opt END                        #searchedCase
-##     | CAST RPAREN expression AS type LPAREN                #cast
-##     | '(' expression (',' expression)+ ')'                 #rowConstructor
-##     | ROW LPAREN expressions RPAREN                        #rowConstructor
-##     | identifier                                           #columnReference
-##     | primary_expression . identifier                      #dereference
-##     | LPAREN expression RPAREN                                             #parenthesizedExpression"""
-##     | SUBSTRING LPAREN value_expression FROM value_expression (FOR value_expression)? RPAREN  #substring
+# Leftover from presto:
+#     | qualified_name LPAREN ASTERISK RPAREN                #functionCall
+#     |      #functionCall
+#     | LPAREN query RPAREN                                  #subqueryExpression
+#     | CASE value_expression when_clause+ else_opt END      #simpleCase
+#     | CASE whenClause+ else_opt END                        #searchedCase
+#     | CAST RPAREN expression AS type LPAREN                #cast
+#     | '(' expression (',' expression)+ ')'                 #rowConstructor
+#     | ROW LPAREN expressions RPAREN                        #rowConstructor
+#     | identifier                                           #columnReference
+#     | primary_expression . identifier                      #dereference
+#     | LPAREN expression RPAREN                                             #parenthesizedExpression"""
+#     | SUBSTRING LPAREN value_expression FROM value_expression (FOR value_expression)? RPAREN  #substring
+
 
 def p_function_call(p):
     r"""function_call : qualified_name LPAREN call_list RPAREN"""
-    distinct = distinct = p[3] is None or p[3] == "DISTINCT"
-    p[0] = FunctionCall(p.lineno(1), p.lexpos(1),name=p[1], distinct=distinct, arguments=p[3])
+    distinct = p[3] is None or p[3] == "DISTINCT"
+    p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=distinct, arguments=p[3])
 
 
 def p_call_list(p):
@@ -766,11 +769,7 @@ def p_base_type(p):
 def p_qualified_name(p):
     r"""qualified_name : qualified_name PERIOD IDENTIFIER
                        | IDENTIFIER"""
-    if len(p) == 2:
-        parts = [p[1]]
-    elif isinstance(p[1], QualifiedName):
-        parts = p[1].parts
-        parts = [p[3]] + parts
+    parts = [p[1]] if len(p) == 2 else p[1].parts + [p[3]]
     p[0] = QualifiedName(parts=parts)
 
 
@@ -808,34 +807,32 @@ def p_empty(p):
 
 
 def p_error(p):
-    print p
-    print "Syntax error in input!"
+    print(p)
+    print("Syntax error in input!")
 
 
 parser = yacc.yacc()
 
 
-#print repr(parser.parse('SELECT "1" FROM dual x', tracking=True, debug=True))
-#print repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True, debug=True))
-print repr(parser.parse("select r(x) from ( select 1 from dual as x) y", tracking=True, debug=True))
-#print repr(parser.parse("(SELECT 1)", tracking=True))
+# print(repr(parser.parse('SELECT "1" FROM dual x', tracking=True, debug=True)))
+# print(repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True, debug=True)))
+# print(repr(parser.parse("select r(x) from ( select 1 from dual as x) y", tracking=True, debug=True)))
+# print(repr(parser.parse("(SELECT 1)", tracking=True)))
 
-
-# print repr(parser.parse("select 1 from dual", tracking=True))
-# print repr(parser.parse("SELECT 1 FROM DUAL", tracking=True))
-# print repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True))
-# print repr(parser.parse("SELECT 1, 2", tracking=True))
-# print repr(parser.parse("SELECT true", tracking=True))
-# print repr(parser.parse("SELECT null", tracking=True))
-# print repr(parser.parse("SELECT hi", tracking=True))
-# print repr(parser.parse("SELECT 'hi'", tracking=True))
-# print repr(parser.parse("SELECT 1, 2 ", tracking=True))
-# print repr(parser.parse("SELECT 1 Y FROM DUAL", tracking=True))
-# print repr(parser.parse("SELECT 1 as Y FROM DUAL", tracking=True))
-# print repr(parser.parse("SELECT 1 FROM dual x", tracking=True))
-# print repr(parser.parse("SELECT 1 FROM dual as x", tracking=True))
-# print repr(parser.parse("SELECT z.y FROM dual z", tracking=True))
-# print repr(parser.parse("SELECT 1 FROM dual z where z.x = 3 or z.y = 4", tracking=True))
-
-
-#print repr(parser.parse("SELECT `hi`", tracking=True))
+print(repr(parser.parse("select a.b.c.d from dual", tracking=True)))
+# print(repr(parser.parse("select 1 from dual", tracking=True)))
+# print(repr(parser.parse("SELECT 1 FROM DUAL", tracking=True)))
+# print(repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True)))
+# print(repr(parser.parse("SELECT 1, 2", tracking=True)))
+# print(repr(parser.parse("SELECT true", tracking=True)))
+# print(repr(parser.parse("SELECT null", tracking=True)))
+# print(repr(parser.parse("SELECT hi", tracking=True)))
+# print(repr(parser.parse("SELECT 'hi'", tracking=True)))
+# print(repr(parser.parse("SELECT 1, 2 ", tracking=True)))
+# print(repr(parser.parse("SELECT 1 Y FROM DUAL", tracking=True)))
+# print(repr(parser.parse("SELECT 1 as Y FROM DUAL", tracking=True)))
+# print(repr(parser.parse("SELECT 1 FROM dual x", tracking=True)))
+# print(repr(parser.parse("SELECT 1 FROM dual as x", tracking=True)))
+# print(repr(parser.parse("SELECT z.y FROM dual z", tracking=True)))
+# print(repr(parser.parse("SELECT 1 FROM dual z where z.x = 3 or z.y = 4", tracking=True))
+# print(repr(parser.parse("SELECT `hi`", tracking=True)))
