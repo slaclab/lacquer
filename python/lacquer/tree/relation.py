@@ -31,7 +31,7 @@ class Join(Relation):
 
     def __init__(self, line=None, pos=None, join_type=None, left=None, right=None, criteria=None):
         super(Join, self).__init__(line, pos)
-        self.type = join_type
+        self.join_type = join_type
         self.left = left
         self.right = right
         self.criteria = criteria
