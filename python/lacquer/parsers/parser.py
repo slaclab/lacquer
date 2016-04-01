@@ -76,7 +76,7 @@ def t_QUOTED_IDENTIFIER(t):
 
 
 def t_BACKQUOTED_IDENTIFIER(t):
-    r'`( [^`] | `` )*`'
+    r'`([^`]|``)*`'
     val = t.value.lower()
     if val in reserved:
         t.type = reserved[val]
@@ -90,7 +90,7 @@ def t_SIMPLE_COMMENT(t):
 
 
 def t_newline(t):
-    r'\n+'
+    r'[\r\n]+'
     t.lexer.lineno += t.value.count("\n")
 
 
@@ -242,7 +242,8 @@ def p_query_specification(p):
     # Reduce the implicit join relations
     from_ = None
     if from_relations:
-        for rel in from_relations:
+        from_ = from_relations[0]
+        for rel in from_relations[1:]: # Skip first one
             from_ = Join(p.lineno(4), p.lexpos(4), join_type="IMPLICIT", left=from_, right=rel)
 
     p[0] = QuerySpecification(p.lineno(1), p.lexpos(1),
@@ -257,7 +258,19 @@ def p_query_specification(p):
 def p_from_opt(p):
     r"""from_opt : FROM relations
                  | empty"""
-    return p[2] if p[1] else None
+    p[0] = p[2] if p[1] else None
+
+
+def p_relations(p):
+    r"""relations : relations COMMA relation
+                  | relation"""
+    _item_list(p)
+
+
+def p_relation(p):
+    r"""relation : join_relation
+                 | aliased_relation"""
+    p[0] = p[1]
 
 
 def p_where_opt(p):
@@ -352,18 +365,6 @@ def p_join_relation(p):
                     left=p[1], right=right, criteria=criteria)
 
 
-def p_relations(p):
-    r"""relations : relation
-                  | relations COMMA relation"""
-    _item_list(p)
-
-
-def p_relation(p):
-    r"""relation : join_relation
-                 | aliased_relation"""
-    p[0] = p[1]
-
-
 def p_join_type(p):
     r"""join_type : INNER
                   | LEFT outer_opt
@@ -396,23 +397,34 @@ def p_identifiers(p):
 
 def p_aliased_relation(p):
     r"""aliased_relation : relation_primary correlation_alias_opt"""
-    p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[1],
-                           alias=p[2].alias, column_names=p[2].column_names)
+    if p[2]:
+        alias = p[2].alias
+        column_names = p[2].column_names
+        p[0] = AliasedRelation(p.lineno(1), p.lexpos(1),
+                               relation=p[1], alias=alias, column_names=column_names)
+    else:
+        p[0] = p[1]
 
 
 # Notes: 'AS' in as_opt not supported on most databases
 # Column list (aka derived column list) not supported by many databases
 def p_correlation_alias_opt(p):
-    r"""correlation_alias_opt : as_opt identifier"""
+    r"""correlation_alias_opt : as_opt identifier
+                              | empty"""
     # Note: We are just using Node for this one rather than creating a new class
-    p[0] = Node(p.lineno(1), p.lexpos(1), alias=p[2])
+    p[0] = Node(p.lineno(1), p.lexpos(1), alias=p[2]) if p[1] else None
 
 
 def p_relation_primary(p):
     r"""relation_primary : qualified_name
-                         | LPAREN query RPAREN
-                         | LPAREN relation RPAREN"""
+                         | LPAREN nested_relation RPAREN"""
     p[0] = p[1] if len(p) == 2 else p[2]
+
+
+def p_nested_relation(p):
+    r"""nested_relation : query
+                        | relation"""
+    p[0] = p[1]
 
 
 def p_expressions(p):
@@ -696,14 +708,14 @@ def p_when_clause(p):
 
 
 def p_qualified_name(p):
-    r"""qualified_name : column_name PERIOD qualified_name
-                       | column_name"""
-    return _item_list(p)
-
-
-def p_column_name(p):
-    r"""column_name : IDENTIFIER"""
-    p[0] = p[1]
+    r"""qualified_name : qualified_name PERIOD IDENTIFIER
+                       | IDENTIFIER"""
+    if len(p) == 2:
+        parts = [p[1]]
+    elif isinstance(p[1], QualifiedName):
+        parts = p[1].parts
+        parts =[p[3]] + parts
+    p[0] = QualifiedName(parts=parts)
 
 
 def p_identifier(p):
@@ -748,14 +760,15 @@ parser = yacc.yacc()
 
 
 #print repr(parser.parse("SELECT 1", tracking=True))
-#print repr(parser.parse("SELECT (SELECT 1)", tracking=True))
+print repr(parser.parse("SELECT (SELECT 1 FROM DUAL) FROM DUAL", tracking=True))
 #print repr(parser.parse("(SELECT 1)", tracking=True))
 #print repr(parser.parse("SELECT 1, 2", tracking=True))
 #print repr(parser.parse("SELECT true", tracking=True))
 #print repr(parser.parse("SELECT null", tracking=True))
-print repr(parser.parse("SELECT hi", tracking=True, debug=True))
-print repr(parser.parse("SELECT 'hi'", tracking=True))
+#print repr(parser.parse("SELECT hi", tracking=True, debug=True))
+#print repr(parser.parse("SELECT 'hi'", tracking=True))
 #print repr(parser.parse("SELECT `hi`", tracking=True))
-print parser.parse("SELECT 1, 2 ", tracking=True, debug=True)
-print parser.parse("SELECT 1 FROM dual", tracking=True, debug=True)
+#print parser.parse("SELECT 1, 2 ", tracking=True, debug=True)
+#print parser.parse("SELECT 1 FROM dual.dual.dual", tracking=True)
+#print parser.parse("SELECT 1 FROM dual", tracking=True)
 
