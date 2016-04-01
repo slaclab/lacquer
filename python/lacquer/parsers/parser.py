@@ -363,7 +363,7 @@ def p_cross_join(p):
 
 
 def p_natural_join(p):
-    r"""natural_join : table_reference NATURAL join_type JOIN aliased_relation"""
+    r"""natural_join : table_reference NATURAL join_type JOIN aliased_relation """
     right = p[5]
     criteria = NaturalJoin()
     join_type = p[2] if p[2] in ("LEFT", "RIGHT", "FULL") else "INNER"
@@ -405,9 +405,8 @@ def p_identifiers(p):
 def p_aliased_relation(p):
     r"""aliased_relation : qualified_name alias_opt"""
     if p[2]:
-        alias = p[2].alias
         p[0] = AliasedRelation(p.lineno(1), p.lexpos(1),
-                               relation=p[1], alias=alias)  # , column_names=column_names)
+                               relation=p[1], alias=p[2])  # , column_names=column_names)
     else:
         p[0] = p[1]
 
@@ -473,14 +472,20 @@ def p_boolean_factor(p):
 
 
 def p_boolean_test(p):
-    r"""boolean_test : boolean_primary"""  # No IS NOT? (TRUE|FALSE)
+    r"""boolean_test : boolean_primary"""
+    # No IS NOT? (TRUE|FALSE)
     p[0] = p[1]
 
 
 def p_boolean_primary(p):
     r"""boolean_primary : predicate
-                        | LPAREN search_condition RPAREN"""
+                        | parenthetic_expression"""
     p[0] = p[1] if len(p) == 2 else p[2]
+
+
+def p_parenthetic_expression(p):
+    r"""parenthetic_expression : RPAREN expression RPAREN"""
+    p[0] = p[1]
 
 
 def p_predicate(p):
@@ -787,7 +792,7 @@ parser = yacc.yacc()
 
 
 #print repr(parser.parse('SELECT "1" FROM dual x', tracking=True, debug=True))
-print repr(parser.parse("select distinct (select 1 from dual as x) from dual", tracking=True, debug=True))
+print repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True, debug=True))
 #print repr(parser.parse("(SELECT 1)", tracking=True))
 
 
