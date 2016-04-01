@@ -645,7 +645,6 @@ def p_as_opt(p):
 def p_not_opt(p):
     r"""not_opt : NOT
                 | empty"""
-    # Ignore
     p[0] = p[1]
 
 
