@@ -137,16 +137,10 @@ def p_query_no_with(p):
                      with_=None, query_body=p[1], order_by=p[2], limit=p[3])
 
 
+# ORDER BY
 def p_order_by_opt(p):
     r"""order_by_opt : ORDER BY sort_items
                      | empty"""
-    p[0] = p[3] if p[1] else None
-
-
-def p_limit_opt(p):
-    r"""limit_opt : LIMIT INTEGER
-                  | LIMIT ALL
-                  | empty"""
     p[0] = p[3] if p[1] else None
 
 
@@ -176,6 +170,15 @@ def p_null_ordering_opt(p):
     p[0] = p[2] if p[1] else None
 
 
+# LIMIT
+def p_limit_opt(p):
+    r"""limit_opt : LIMIT INTEGER
+                  | LIMIT ALL
+                  | empty"""
+    p[0] = p[3] if p[1] else None
+
+
+# QUERY TERM
 def p_query_term(p):
     r"""query_term : query_term_intersect
                    | query_term UNION set_quantifier_opt query_term_intersect
@@ -219,13 +222,19 @@ def p_nonjoin_query_primary(p):
 def p_simple_table(p):
     r"""simple_table : query_specification
                      | TABLE qualified_name
-                     | VALUES expressions"""
+                     | VALUES values_list"""
     if p[1] == "TABLE":
         p[0] = Table(p.lineno(1), p.lexpos(1), name=p[2])
     elif p[1] == "VALUES":
         p[0] = Values(p.lineno(1), p.lexpos(1), rows=p[2])
     else:
         p[0] = TableSubquery(p.lineno(1), p.lexpos(1), query=p[1])
+
+
+def p_values_list(p):
+    r"""values_list : values_list COMMA expression
+                    | expression"""
+    _item_list(p)
 
 
 def _item_list(p):
@@ -262,6 +271,7 @@ def p_query_specification(p):
                               where=where,
                               group_by=group_by,
                               having=having)
+
 
 def p_where_opt(p):
     r"""where_opt : WHERE search_condition
@@ -433,13 +443,6 @@ def p_alias(p):
     p[0] = p[2]
 
 
-def p_expressions(p):
-    r"""expressions : expressions COMMA expression
-                    | expression
-                    """
-    _item_list(p)
-
-
 def p_expression(p):
     r"""expression : search_condition"""
     p[0] = p[1]
@@ -519,13 +522,18 @@ def p_in_predicate(p):
 
 
 def p_in_value(p):
-    r"""in_value : expressions
+    r"""in_value : in_expressions
                  | query"""
     if p.slice[1].type == "expressions":
         p[0] = InListExpression(p.lineno(1), p.lexpos(1), values=p[1])
     else:
         p[0] = SubqueryExpression(p.lineno(1), p.lexpos(1), query=p[1])
 
+
+def p_in_expressions(p):
+    r"""in_expressions : in_expressions COMMA expression
+                       | expression"""
+    _item_list(p)
 
 # TODO: add:    | value_expression not_opt LIKE value_expression_ ESCAPE value_expression
 def p_like_predicate(p):
@@ -604,34 +612,40 @@ def p_base_primary_expression(p):
                            | STRING
                            | interval
                            | identifier STRING
-                           | qualified_name"""
+                           | qualified_name
+                           | function_call
+                           | date_time"""
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
         p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1])
-    elif len(p) == 2:
-        p[0] = p[1]
     else:
-        p[0] = p[2]
+        p[0] = p[1]
 
-    ##     | qualified_name LPAREN ASTERISK RPAREN                                            #functionCall
-    ##     | qualified_name LPAREN ( set_quantifier_opt expressions)? RPAREN     #functionCall
-    ##     | LPAREN query RPAREN                                                               #subqueryExpression
-    ##     | CASE value_expression when_clause+ else_opt END         #simpleCase
-    ##     | CASE whenClause+ else_opt END                         #searchedCase
-    ##     | CAST RPAREN expression AS type LPAREN                                                #cast
 
-    ##     | '(' expression (',' expression)+ ')'                                           #rowConstructor
-    ##     | ROW LPAREN expressions RPAREN                                       #rowConstructor
-    ##     | identifier                                                                     #columnReference
-    ##     | primary_expression . identifier                                #dereference
-    ##     | SUBSTRING LPAREN value_expression FROM value_expression (FOR value_expression)? RPAREN  #substring
-    ##     | LPAREN expression RPAREN                                                             #parenthesizedExpression"""
-    ##     | CURRENT_DATE                                                              #specialDateTimeFunction
-    ##     | CURRENT_TIME    integer_param_opt                           #specialDateTimeFunction
-    ##     | CURRENT_TIMESTAMP    integer_param_opt                    #specialDateTimeFunction
-    ##     | LOCALTIME    integer_param_opt                             #specialDateTimeFunction
-    ##     | LOCALTIMESTAMP    integer_param_opt                         #specialDateTimeFunction
+##     | qualified_name LPAREN ASTERISK RPAREN                #functionCall
+##     |      #functionCall
+##     | LPAREN query RPAREN                                  #subqueryExpression
+##     | CASE value_expression when_clause+ else_opt END      #simpleCase
+##     | CASE whenClause+ else_opt END                        #searchedCase
+##     | CAST RPAREN expression AS type LPAREN                #cast
+##     | '(' expression (',' expression)+ ')'                 #rowConstructor
+##     | ROW LPAREN expressions RPAREN                        #rowConstructor
+##     | identifier                                           #columnReference
+##     | primary_expression . identifier                      #dereference
+##     | LPAREN expression RPAREN                                             #parenthesizedExpression"""
+##     | SUBSTRING LPAREN value_expression FROM value_expression (FOR value_expression)? RPAREN  #substring
+
+def p_function_call(p):
+    r"""function_call : qualified_name LPAREN call_list RPAREN"""
+    distinct = distinct = p[3] is None or p[3] == "DISTINCT"
+    p[0] = FunctionCall(p.lineno(1), p.lexpos(1),name=p[1], distinct=distinct, arguments=p[3])
+
+
+def p_call_list(p):
+    r"""call_list : call_list COMMA expression
+                  | expression"""
+    _item_list(p)
 
 
 def p_general_literal(p):
@@ -643,6 +657,16 @@ def p_general_literal(p):
         p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1].value)
     else:
         p[0] = p[1]
+
+
+def p_date_time(p):
+    r"""date_time : CURRENT_DATE
+                  | CURRENT_TIME      integer_param_opt
+                  | CURRENT_TIMESTAMP integer_param_opt
+                  | LOCALTIME         integer_param_opt
+                  | LOCALTIMESTAMP    integer_param_opt"""
+    precision = p[2] if len(p) == 3 else None
+    p[0] = CurrentTime(p.lineno(1), p.lexpos(1), type=p[1], precision=p[2])
 
 
 def p_timezone_specifier(p):
@@ -713,30 +737,30 @@ def p_sign(p):
     p[0] = p[1]
 
 
-#def p_table_element(p):
-#    """table_element : IDENTIFIER type"""
-#    p[0] = TableElement(p.lineno(1), p.lexpos(1), name=p[1], typedef=p[2])
+def p_when_clause(p):
+    r"""when_clause : WHEN search_condition THEN value_expression"""
+    p[0] = WhenClause(p.lineno(1), p.lexpos(1), operand=p[2], result=p[4])
 
 
-#def p_type(p):
-#    """type : base_type integer_parameter_opt"""
-#    p[0] = "%s%s" % (p[1], p[2] or '')
+def p_table_element(p):
+    """table_element : IDENTIFIER type"""
+    p[0] = TableElement(p.lineno(1), p.lexpos(1), name=p[1], typedef=p[2])
 
 
-#def p_integer_parameter_opt(p):
-#    """integer_parameter_opt : LPAREN INTEGER RPAREN
-#                             | empty"""
-#    p[0] = "(%s)" % p[2] if p[1] else None
+def p_type(p):
+    """type : base_type integer_param_opt"""
+    p[0] = "%s%s" % (p[1], ("(%d)" % p[2]) if p[2] else '')
+
+
+def p_integer_param_opt(p):
+    """integer_param_opt : LPAREN INTEGER RPAREN
+                             | empty"""
+    p[0] = integer_types[-1](p[2]) if p[1] else None
 
 
 def p_base_type(p):
     """base_type : IDENTIFIER"""
     p[0] = p[1]
-
-
-def p_when_clause(p):
-    r"""when_clause : WHEN search_condition THEN value_expression"""
-    p[0] = WhenClause(p.lineno(1), p.lexpos(1), operand=p[2], result=p[4])
 
 
 def p_qualified_name(p):
@@ -746,7 +770,7 @@ def p_qualified_name(p):
         parts = [p[1]]
     elif isinstance(p[1], QualifiedName):
         parts = p[1].parts
-        parts =[p[3]] + parts
+        parts = [p[3]] + parts
     p[0] = QualifiedName(parts=parts)
 
 
@@ -792,7 +816,8 @@ parser = yacc.yacc()
 
 
 #print repr(parser.parse('SELECT "1" FROM dual x', tracking=True, debug=True))
-print repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True, debug=True))
+#print repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True, debug=True))
+print repr(parser.parse("select r(x) from ( select 1 from dual as x) y", tracking=True, debug=True))
 #print repr(parser.parse("(SELECT 1)", tracking=True))
 
 
