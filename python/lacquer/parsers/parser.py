@@ -184,14 +184,14 @@ def p_query(p):
 def p_order_by_opt(p):
     r"""order_by_opt : ORDER BY sort_items
                      | empty"""
-    return p[3] if p[1] else None
+    p[0] =  p[3] if p[1] else None
 
 
 def p_limit_opt(p):
     r"""limit_opt : LIMIT INTEGER
                   | LIMIT ALL
                   | empty"""
-    return p[3] if p[1] else None
+    p[0] = p[3] if p[1] else None
 
 
 def _item_list(p):
@@ -276,19 +276,19 @@ def p_relation(p):
 def p_where_opt(p):
     r"""where_opt : WHERE expression
                   | empty"""
-    return p[2] if p[1] else None
+    p[0] = p[2] if p[1] else None
 
 
 def p_group_by_opt(p):
     r"""group_by_opt : GROUP BY set_quantifier_opt grouping_elements
                      | empty"""
-    return p[3] if p[1] else None
+    p[0] = p[3] if p[1] else None
 
 
 def p_having_opt(p):
     r"""having_opt : HAVING expression
                    | empty"""
-    return p[2] if p[1] else None
+    p[0] = p[2] if p[1] else None
 
 
 def p_grouping_elements(p):
@@ -428,14 +428,20 @@ def p_nested_relation(p):
 
 
 def p_expressions(p):
-    r"""expressions : expression
-                    | expressions COMMA expression"""
+    r"""expressions : expressions COMMA expression
+                    | expression
+                    """
     _item_list(p)
 
 
 def p_expression(p):
-    r"""expression : expression AND or_expression
-                   | or_expression"""
+    r"""expression : boolean_expression"""
+    p[0] = p[1]
+
+
+def p_boolean_expression(p):
+    r"""boolean_expression : boolean_expression AND or_expression
+                           | or_expression"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -452,29 +458,27 @@ def p_or_expression(p):
 
 
 def p_simple_expression(p):
-    r"""simple_expression : predicate
-                          | NOT expression
-                          | EXISTS LPAREN query RPAREN"""
-    if len(p) == 2:
-        p[0] = p[1]
-    elif len(p) == 3:
+    r"""simple_expression : boolean_factor"""
+    p[0] = p[1]
+
+
+def p_boolean_factor(p):
+    r"""boolean_factor : not_opt boolean_test"""
+    if p[1]:
         p[0] = NotExpression(p.lineno(1), p.lexpos(1), value=p[2])
     else:
-        p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[3])
+        p[0] = p[2]
 
 
-"""
-predicate
-	:	comparison_predicate
-	|	between_predicate
-	|	in_predicate
-	|	like_predicate
-	|	null_predicate
-	|	quantified_comparison_predicate
-	|	exists_predicate
-	|	match_predicate
-	|	overlaps_predicate
-"""
+def p_boolean_test(p):
+    r"""boolean_test : boolean_primary"""
+    p[0] = p[1]
+
+
+def p_boolean_primary(p):
+    r"""boolean_primary : predicate
+                        | LPAREN expression RPAREN"""
+    p[0] = p[1] if len(p) == 2 else p[2]
 
 
 def p_predicate(p):
@@ -482,15 +486,15 @@ def p_predicate(p):
                   | between_predicate
                   | in_predicate
                   | like_predicate
-                  | is_predicate"""
-
+                  | null_predicate
+                  | exists_predicate"""
     # TODO: maybe:  | value_expression IS not_opt DISTINCT FROM value_expression
     p[0] = p[1]
 
 
 def p_comparison_predicate(p):
     r"""comparison_predicate : value_expression comparison_operator value_expression"""
-    p[0] = ComparisonExpression(p.lineno(1), p.lexpos(1), type=p[1], left=p[1], right=p[2])
+    p[0] = ComparisonExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
 
 
 def p_between_predicate(p):
@@ -526,12 +530,16 @@ def _check_not(p):
         p[0] = NotExpression(line=p[0].line, pos=p[0].pos, value=p[0])
 
 
-def p_is_predicate(p):
-    r"""is_predicate : value_expression IS not_opt NULL"""
+def p_null_predicate(p):
+    r"""null_predicate : value_expression IS not_opt NULL"""
     if p[3]:  # Not null
         p[0] = IsNotNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
     else:
         p[0] = IsNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
+
+def p_exists_predicate(p):
+    r"""exists_predicate : EXISTS LPAREN query RPAREN"""
+    p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[3])
 
 
 def p_value_expression(p):
@@ -573,8 +581,7 @@ def p_primary_expression(p):
                            | STRING
                            | interval
                            | identifier STRING
-                           | identifier
-                           | LPAREN expression RPAREN"""
+                           | identifier"""
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
@@ -752,15 +759,15 @@ def p_empty(p):
 
 
 def p_error(p):
-    print dir(p)
     print "Syntax error in input!"
 
 
 parser = yacc.yacc()
 
 
-#print repr(parser.parse("SELECT 1", tracking=True))
-print repr(parser.parse("SELECT (SELECT 1 FROM DUAL) FROM DUAL", tracking=True))
+print repr(parser.parse("SELECT 1 FROM DUAL", tracking=True))
+print repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True, debug=True))
+#print repr(parser.parse("SELECT (SELECT 2 FROM X)", tracking=True, debug=True))
 #print repr(parser.parse("(SELECT 1)", tracking=True))
 #print repr(parser.parse("SELECT 1, 2", tracking=True))
 #print repr(parser.parse("SELECT true", tracking=True))
