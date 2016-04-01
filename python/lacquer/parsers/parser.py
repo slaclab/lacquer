@@ -45,6 +45,7 @@ t_ASTERISK = r'\*'
 t_SLASH = r'/'
 t_PERCENT = r'%'
 
+t_STRING = r"'([^']|'')*'"
 t_CONCAT = r'\|\|'
 
 t_ignore = ' \t'
@@ -311,13 +312,19 @@ def p_select_items(p):
 
 
 def p_select_item(p):
-    r"""select_item : expression alias_opt
-                    | qualified_name PERIOD ASTERISK
-                    | ASTERISK"""
-    if len(p) == 3:
-        p[0] = SingleColumn(p.lineno(1), p.lexpos(1), alias=p[2], expression=p[1])
-    else:
-        p[0] = AllColumns(p.lineno(1), p.lexpos(1), prefix=p[1] if len(p) == 4 else None)
+    r"""select_item : derived_column
+                    | all_columns"""
+    p[0] = p[1]
+
+
+def p_derived_column(p):
+    r"""derived_column : value_expression alias_opt"""
+    p[0] = SingleColumn(p.lineno(1), p.lexpos(1), alias=p[2], expression=p[1])
+
+
+def p_all_columns(p):
+    r"""all_columns : ASTERISK"""
+    p[0] = AllColumns(p.lineno(1), p.lexpos(1), prefix=p[1] if len(p) == 4 else None)
 
 
 def p_alias_opt(p):
@@ -374,11 +381,17 @@ def p_outer_opt(p):
 
 def p_join_criteria(p):
     r"""join_criteria : ON expression
-                      | USING LPAREN identifiers RPAREN"""
+                      | USING LPAREN join_columns RPAREN"""
     if len(p) == 3:
         p[0] = JoinOn(expression=p[2])
     else:
         p[0] = JoinUsing(columns=p[3])
+
+
+def p_identifiers(p):
+    r"""join_columns : identifier
+                     | join_columns COMMA identifier"""
+    _item_list(p)
 
 
 def p_aliased_relation(p):
@@ -393,12 +406,6 @@ def p_correlation_alias_opt(p):
     r"""correlation_alias_opt : as_opt identifier"""
     # Note: We are just using Node for this one rather than creating a new class
     p[0] = Node(p.lineno(1), p.lexpos(1), alias=p[2])
-
-
-def p_identifiers(p):
-    r"""identifiers : identifier
-                    | identifiers COMMA identifier"""
-    _item_list(p)
 
 
 def p_relation_primary(p):
@@ -459,31 +466,19 @@ predicate
 
 
 def p_predicate(p):
-    r"""predicate : predicate comparison_operator value_expression
+    r"""predicate : comparison_predicate
                   | between_predicate
                   | in_predicate
                   | like_predicate
                   | is_predicate"""
 
     # TODO: maybe:  | value_expression IS not_opt DISTINCT FROM value_expression
-    if len(p) == 2:
-        p[0] = p[1]
-    elif p.slice[2].type == "comparison_operator":
-        p[0] = ComparisonExpression(p.lineno(1), p.lexpos(1), type=p[1], left=p[1], right=p[2])
-    else:
-        if p.slice[2].type == "IS":
-            if p[4] == "NULL":
-                if p[3]:  # Not null
-                    p[0] = IsNotNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
-                else:
-                    p[0] = IsNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
-        if p[2] and p.slice[2].type == "not_opt":
-            p[0] = NotExpression(line=p[0].line, pos=p[0].pos, value=p[0])
+    p[0] = p[1]
 
 
-def _check_not(p):
-    if p[2] and p.slice[2].type == "not_opt":
-        p[0] = NotExpression(line=p[0].line, pos=p[0].pos, value=p[0])
+def p_comparison_predicate(p):
+    r"""comparison_predicate : value_expression comparison_operator value_expression"""
+    p[0] = ComparisonExpression(p.lineno(1), p.lexpos(1), type=p[1], left=p[1], right=p[2])
 
 
 def p_between_predicate(p):
@@ -512,6 +507,11 @@ def p_like_predicate(p):
     r"""like_predicate : value_expression not_opt LIKE value_expression"""
     p[0] = LikePredicate(p.lineno(1), p.lexpos(1), value=p[1], pattern=p[4])
     _check_not(p)
+
+
+def _check_not(p):
+    if p[2] and p.slice[2].type == "not_opt":
+        p[0] = NotExpression(line=p[0].line, pos=p[0].pos, value=p[0])
 
 
 def p_is_predicate(p):
@@ -566,32 +566,9 @@ def p_primary_expression(p):
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
-        p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1].value)
+        p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1])
     else:
         p[0] = p[1]
-
-
-"""
-<nonparenthesized value expression primary>    ::=
-         <unsigned value specification>
-     |     <column reference>
-     |     <set function specification>
-     |     <scalar subquery>
-     |     <case expression>
-     |     <cast specification>
-     |     <subtype treatment>
-     |     <attribute or method reference>
-     |     <reference resolution>
-     |     <collection value constructor>
-     |     <routine invocation>
-     |     <field reference>
-     |     <element reference>
-     |     <method invocation>
-     |     <static method invocation>
-     |     <new specification>
-
-
-"""
 
     ##     | qualified_name LPAREN ASTERISK RPAREN                                            #functionCall
     ##     | qualified_name LPAREN ( set_quantifier_opt expressions)? RPAREN     #functionCall
@@ -719,9 +696,14 @@ def p_when_clause(p):
 
 
 def p_qualified_name(p):
-    r"""qualified_name : identifier PERIOD qualified_name
-                       | identifier"""
+    r"""qualified_name : column_name PERIOD qualified_name
+                       | column_name"""
     return _item_list(p)
+
+
+def p_column_name(p):
+    r"""column_name : IDENTIFIER"""
+    p[0] = p[1]
 
 
 def p_identifier(p):
@@ -758,7 +740,6 @@ def p_empty(p):
 
 
 def p_error(p):
-    print p.type
     print dir(p)
     print "Syntax error in input!"
 
@@ -773,8 +754,8 @@ parser = yacc.yacc()
 #print repr(parser.parse("SELECT true", tracking=True))
 #print repr(parser.parse("SELECT null", tracking=True))
 print repr(parser.parse("SELECT hi", tracking=True, debug=True))
-#print repr(parser.parse("SELECT 'hi'", tracking=True))
+print repr(parser.parse("SELECT 'hi'", tracking=True))
 #print repr(parser.parse("SELECT `hi`", tracking=True))
-#print parser.parse("SELECT 1, 2 ", tracking=True, debug=True)
-#print parser.parse("SELECT 1 FROM dual", tracking=True, debug=True)
+print parser.parse("SELECT 1, 2 ", tracking=True, debug=True)
+print parser.parse("SELECT 1 FROM dual", tracking=True, debug=True)
 
