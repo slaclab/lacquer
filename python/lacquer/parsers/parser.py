@@ -6,7 +6,7 @@ from lacquer.tree import *
 
 reserved = sorted(set(presto_tokens).difference(presto_nonreserved))
 
-tokens = ['INTEGER',               'DECIMAL',
+tokens = ['INTEGER',               'DECIMAL', 'NUMBER',
           'IDENTIFIER',            'DIGIT_IDENTIFIER',
           'QUOTED_IDENTIFIER',     'BACKQUOTED_IDENTIFIER',
           'STRING',                'PERIOD',
@@ -19,15 +19,24 @@ tokens = ['INTEGER',               'DECIMAL',
           'EQ',                    'NE',
           'CONCAT',                'SLASH',
           'ASTERISK',              'PERCENT',
+          'TOP',  # ADQL
           'NON_RESERVED',
           ] + reserved + list(presto_nonreserved)
 
-_exponent = r'[eE][+-]?\d+'
-_flit1 = r'\d+\.\d*({exp})?'.format(exp=_exponent)
-_flit2 = r'\.\d+({exp})?'.format(exp=_exponent)
-_flit3 = r'\d+({exp})'.format(exp=_exponent)  # require exponent
-_flits = '|'.join([_flit1, _flit2, _flit3])
-t_DECIMAL = r'({flits})'.format(flits=_flits)
+# _exponent = r'[eE][+-]?\d+'
+# _flit1 = r'\d+\.\d*({exp})?'.format(exp=_exponent)
+# _flit2 = r'\.\d+({exp})?'.format(exp=_exponent)
+# _flit3 = r'\d+({exp})'.format(exp=_exponent)  # require exponent
+# _flits = '|'.join([_flit1, _flit2, _flit3])
+
+
+def t_NUMBER(t):
+    r'\d+(?:\.\d*)?(?:[eE][+-]\d+)?'
+    if 'e' in t.value or 'E' in t.value or '.' in t.value:
+        t.type = 'DECIMAL'
+    else:
+        t.type = 'INTEGER'
+    return t
 
 t_LPAREN = '\('
 t_RPAREN = '\)'
@@ -65,6 +74,8 @@ def t_IDENTIFIER(t):
         t.type = val.upper()
     if val in presto_nonreserved:
         t.type = "NON_RESERVED"
+    if val.upper() == "TOP":
+        t.type = "TOP"
     return t
 
 
@@ -107,11 +118,17 @@ def p_statement(p):
     p[0] = p[1]
 
 
+def p_subquery(p):
+    r"""subquery : LPAREN query RPAREN"""
+    p[0] = SubqueryExpression(p.lineno(1), p.lexpos(1), query=p[2])
+
+
 def p_query(p):
     r"""query : query_no_with"""
     p[0] = p[1]
 
 
+# FIXME: query expression body or non-join query primary?
 def p_query_no_with(p):
     r"""query_no_with : query_term order_by_opt limit_opt"""
     if isinstance(p[1], QuerySpecification):
@@ -121,6 +138,11 @@ def p_query_no_with(p):
         # expects this structure to resolve references with respect
         # to columns defined in the query specification)
         query = p[1]
+        limit = p[3]
+
+        # Support ADQL TOP
+        if 'limit' in query:
+            limit = query.limit
         p[0] = Query(p.lineno(1), p.lexpos(1), with_=None,
                      query_body=QuerySpecification(
                          query.line,
@@ -131,7 +153,7 @@ def p_query_no_with(p):
                          query.group_by,
                          query.having,
                          p[2],
-                         p[3]
+                         limit
                      ))
     else:
         p[0] = Query(p.lineno(1), p.lexpos(1),
@@ -176,9 +198,10 @@ def p_limit_opt(p):
     r"""limit_opt : LIMIT INTEGER
                   | LIMIT ALL
                   | empty"""
-    p[0] = p[3] if p[1] else None
+    p[0] = p[2] if p[1] else None
 
 
+# non-join query expression
 # QUERY TERM
 def p_query_term(p):
     r"""query_term : query_term_intersect
@@ -196,6 +219,7 @@ def p_query_term(p):
             p[0] = Except(p.lineno(1), p.lexpos(1), left=p[1], right=p[3], distinct=distinct)
 
 
+# non-join query term
 def p_query_term_intersect(p):
     r"""query_term_intersect : nonjoin_query_primary
                              | query_term_intersect INTERSECT set_quantifier_opt nonjoin_query_primary"""
@@ -206,9 +230,10 @@ def p_query_term_intersect(p):
         p[0] = Intersect(p.lineno(1), p.lexpos(1), relations=[p[1], p[3]], distinct=distinct)
 
 
+# non-join query primary
 def p_nonjoin_query_primary(p):
     r"""nonjoin_query_primary : simple_table
-                              | LPAREN query_no_with RPAREN"""
+                              | LPAREN query_term RPAREN"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -223,13 +248,21 @@ def p_nonjoin_query_primary(p):
 def p_simple_table(p):
     r"""simple_table : query_specification
                      | TABLE qualified_name
-                     | VALUES values_list"""
-    if p[1] == "TABLE":
-        p[0] = Table(p.lineno(1), p.lexpos(1), name=p[2])
-    elif p[1] == "VALUES":
-        p[0] = Values(p.lineno(1), p.lexpos(1), rows=p[2])
-    else:
+                     | table_value_constructor"""
+    if p.slice[1].type == "query_specification":
         p[0] = TableSubquery(p.lineno(1), p.lexpos(1), query=p[1])
+    else:
+        p[0] = p[1]
+
+
+def p_explicit_table(p):
+    r"""explicit_table : TABLE qualified_name"""
+    p[0] = Table(p.lineno(1), p.lexpos(1), name=p[2])
+
+
+def p_table_value_constructor(p):
+    r"""table_value_constructor : VALUES values_list"""
+    p[0] = Values(p.lineno(1), p.lexpos(1), rows=p[2])
 
 
 def p_values_list(p):
@@ -249,10 +282,10 @@ def _item_list(p):
 
 
 def p_query_specification(p):
-    r"""query_specification : SELECT set_quantifier_opt select_items table_expression_opt"""
+    r"""query_specification : SELECT set_quantifier_opt adql_top_opt select_items table_expression_opt"""
     distinct = p[2] == "DISTINCT"
-    select_items = p[3]
-    table_expression_opt = p[4]
+    select_items = p[4]
+    table_expression_opt = p[5]
     from_relations = table_expression_opt.from_ if table_expression_opt else None
     where = table_expression_opt.where if table_expression_opt else None
     group_by = table_expression_opt.group_by if table_expression_opt else None
@@ -263,7 +296,7 @@ def p_query_specification(p):
     if from_relations:
         from_ = from_relations[0]
         for rel in from_relations[1:]:  # Skip first one
-            from_ = Join(p.lineno(4), p.lexpos(4), join_type="IMPLICIT", left=from_, right=rel)
+            from_ = Join(p.lineno(5), p.lexpos(5), join_type="IMPLICIT", left=from_, right=rel)
 
     p[0] = QuerySpecification(p.lineno(1), p.lexpos(1),
                               select=Select(p.lineno(1), p.lexpos(1),
@@ -272,6 +305,15 @@ def p_query_specification(p):
                               where=where,
                               group_by=group_by,
                               having=having)
+    # ADQL TOP Support
+    if p[3]:
+        p[0].limit = p[3]
+
+
+def p_adql_top_opt(p):
+    r"""adql_top_opt : TOP INTEGER
+                     | empty"""
+    p[0] = int(p[2]) if p[1] else None
 
 
 def p_where_opt(p):
@@ -355,15 +397,12 @@ def p_table_primary(p):
     p[0] = p[1]
 
 
+# joined table
 def p_join_relation(p):
     r"""join_relation : cross_join
-                      | table_reference join_type JOIN table_reference join_criteria
+                      | qualified_join
                       | natural_join"""
-    right = p[4]
-    criteria = p[5]
-    join_type = p[2] if p[2] in ("LEFT", "RIGHT", "FULL") else "INNER"
-    p[0] = Join(p.lineno(1), p.lexpos(1), join_type=join_type,
-                left=p[1], right=right, criteria=criteria)
+    p[0] = p[1]
 
 
 def p_cross_join(p):
@@ -372,11 +411,20 @@ def p_cross_join(p):
                 left=p[1], right=p[3], criteria=None)
 
 
+def p_qualified_join(p):
+    r"""qualified_join : table_reference join_type JOIN table_reference join_criteria"""
+    right = p[4]
+    criteria = p[5]
+    join_type = p[2] if p[2] in ("LEFT", "RIGHT", "FULL") else "INNER"
+    p[0] = Join(p.lineno(1), p.lexpos(1), join_type=join_type,
+                left=p[1], right=right, criteria=criteria)
+
+
 def p_natural_join(p):
-    r"""natural_join : table_reference NATURAL join_type JOIN aliased_relation """
+    r"""natural_join : table_reference NATURAL join_type JOIN aliased_relation"""
     right = p[5]
     criteria = NaturalJoin()
-    join_type = p[2] if p[2] in ("LEFT", "RIGHT", "FULL") else "INNER"
+    join_type = "INNER"
     p[0] = Join(p.lineno(1), p.lexpos(1), join_type=join_type,
                 left=p[1], right=right, criteria=criteria)
 
@@ -428,8 +476,8 @@ def p_aliased_relation(p):
 
 
 def p_derived_table(p):
-    r"""derived_table : LPAREN query RPAREN alias"""
-    p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[2], alias=p[4])
+    r"""derived_table : table_subquery alias"""
+    p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[1], alias=p[2])
 
 
 def p_alias_opt(p):
@@ -516,18 +564,21 @@ def p_between_predicate(p):
 # TODO : value_expression should include subquery in this case
 
 def p_in_predicate(p):
-    r"""in_predicate : value_expression not_opt IN LPAREN in_value RPAREN"""
-    p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=p[5])
+    r"""in_predicate : value_expression not_opt IN in_value"""
+    p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=p[4])
     _check_not(p)
 
 
 def p_in_value(p):
-    r"""in_value : in_expressions
-                 | query"""
+    r"""in_value : LPAREN in_expressions RPAREN
+                 | table_subquery"""
     if p.slice[1].type == "expressions":
         p[0] = InListExpression(p.lineno(1), p.lexpos(1), values=p[1])
-    else:
-        p[0] = SubqueryExpression(p.lineno(1), p.lexpos(1), query=p[1])
+
+
+def p_table_subquery(p):
+    r"""table_subquery : subquery"""
+    p[0] = p[1]
 
 
 def p_in_expressions(p):
@@ -557,8 +608,8 @@ def p_null_predicate(p):
 
 
 def p_exists_predicate(p):
-    r"""exists_predicate : EXISTS LPAREN query RPAREN"""
-    p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[3])
+    r"""exists_predicate : EXISTS table_subquery"""
+    p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[2])
 
 
 def p_value_expression(p):
@@ -608,14 +659,15 @@ def p_parenthetic_primary_expression(p):
 
 def p_base_primary_expression(p):
     r"""base_primary_expression : NULL
-                           | number
-                           | boolean_value
-                           | STRING
-                           | interval
-                           | identifier STRING
-                           | qualified_name
-                           | function_call
-                           | date_time"""
+                                | number
+                                | boolean_value
+                                | STRING
+                                | interval
+                                | identifier STRING
+                                | qualified_name
+                                | function_call
+                                | date_time
+                                | identifier"""
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
@@ -646,8 +698,8 @@ def p_function_call(p):
 
 
 def p_call_list(p):
-    r"""call_list : call_list COMMA expression
-                  | expression"""
+    r"""call_list : call_list COMMA value_expression
+                  | value_expression"""
     _item_list(p)
 
 
@@ -757,7 +809,7 @@ def p_type(p):
 
 def p_integer_param_opt(p):
     """integer_param_opt : LPAREN INTEGER RPAREN
-                             | empty"""
+                         | empty"""
     p[0] = integer_types[-1](p[2]) if p[1] else None
 
 
@@ -767,8 +819,8 @@ def p_base_type(p):
 
 
 def p_qualified_name(p):
-    r"""qualified_name : qualified_name PERIOD IDENTIFIER
-                       | IDENTIFIER"""
+    r"""qualified_name : qualified_name PERIOD identifier
+                       | identifier"""
     parts = [p[1]] if len(p) == 2 else p[1].parts + [p[3]]
     p[0] = QualifiedName(parts=parts)
 
@@ -814,15 +866,29 @@ def p_error(p):
 parser = yacc.yacc()
 
 
-# print(repr(parser.parse('SELECT "1" FROM dual x', tracking=True, debug=True)))
-# print(repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True, debug=True)))
-# print(repr(parser.parse("select r(x) from ( select 1 from dual as x) y", tracking=True, debug=True)))
-# print(repr(parser.parse("(SELECT 1)", tracking=True)))
+adql = """
+SELECT TOP 10 *
+FROM "II/295/SSTGC","II/293/glimpse"
+WHERE 1=CONTAINS(POINT('ICRS',"II/295/SSTGC".RAJ2000,"II/295/SSTGC".DEJ2000),
+             BOX('GALACTIC', 0, 0, 30/60., 10/60.))
+  AND 1=CONTAINS(POINT('ICRS',"II/295/SSTGC".RAJ2000,"II/295/SSTGC".DEJ2000),
+            CIRCLE('ICRS',"II/293/glimpse".RAJ2000,"II/293/glimpse".DEJ2000, 2/3600.0))
+"""
 
-print(repr(parser.parse("select a.b.c.d from dual", tracking=True)))
+print(repr(parser.parse(adql, tracking=True, debug=True)))
+
+# print(repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True)))
+#
+# print(repr(parser.parse('SELECT "!" FROM dual x', tracking=True, debug=True)))
+# print(repr(parser.parse("select r(x, 1, 2, CURRENT_TIME)", tracking=True)))
+#print(repr(parser.parse("(SELECT 1)", tracking=True, debug=True)))
+
+#
+# print(repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True)))
+# print(repr(parser.parse("select a.b.c.d from dual", tracking=True)))
 # print(repr(parser.parse("select 1 from dual", tracking=True)))
 # print(repr(parser.parse("SELECT 1 FROM DUAL", tracking=True)))
-# print(repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True)))
+#
 # print(repr(parser.parse("SELECT 1, 2", tracking=True)))
 # print(repr(parser.parse("SELECT true", tracking=True)))
 # print(repr(parser.parse("SELECT null", tracking=True)))
@@ -834,5 +900,7 @@ print(repr(parser.parse("select a.b.c.d from dual", tracking=True)))
 # print(repr(parser.parse("SELECT 1 FROM dual x", tracking=True)))
 # print(repr(parser.parse("SELECT 1 FROM dual as x", tracking=True)))
 # print(repr(parser.parse("SELECT z.y FROM dual z", tracking=True)))
-# print(repr(parser.parse("SELECT 1 FROM dual z where z.x = 3 or z.y = 4", tracking=True))
+# print(repr(parser.parse("SELECT 1 FROM dual z where z.x = 3 or z.y = 4", tracking=True)))
+
+
 # print(repr(parser.parse("SELECT `hi`", tracking=True)))
