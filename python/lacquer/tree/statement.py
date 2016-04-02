@@ -74,6 +74,7 @@ class ShowColumns(Statement):
     #     return MoreObjects.toStringHelper(this).add("table", table).toString();
     #     """
 
+
 class RenameTable(Statement):
     def __init__(self, line=None, pos=None, source=None, target=None):
         super(RenameTable, self).__init__(line, pos)
