@@ -9,7 +9,7 @@ The following are intended to manipulate, validate, and match specific queries
 # from .approximate import Approximate
 from .query_specification import QuerySpecification
 from .rewrite import ExpressionRewriter, ExpressionTreeRewriter
-from .visitor import AstVisitor, DefaultTraversalVisitor, DefaultExpressionTraversalVisitor, StackableAstVisitor
+from .visitor import AstVisitor, DefaultTraversalVisitor, DefaultExpressionTraversalVisitor
 
 """
 The following classes are intended for the representation of a query
