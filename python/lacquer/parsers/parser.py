@@ -247,7 +247,7 @@ def p_nonjoin_query_primary(p):
 
 def p_simple_table(p):
     r"""simple_table : query_specification
-                     | TABLE qualified_name
+                     | explicit_table
                      | table_value_constructor"""
     if p.slice[1].type == "query_specification":
         p[0] = TableSubquery(p.lineno(1), p.lexpos(1), query=p[1])
@@ -511,7 +511,7 @@ def p_boolean_term(p):
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = LogicalBinaryExpression(p.lineno(1), p.lexpos(1), type="AND", left=p[1], right=p[2])
+        p[0] = LogicalBinaryExpression(p.lineno(1), p.lexpos(1), type="AND", left=p[1], right=p[3])
 
 
 def p_boolean_factor(p):
@@ -667,7 +667,9 @@ def p_base_primary_expression(p):
                                 | qualified_name
                                 | function_call
                                 | date_time
+                                | case_specification
                                 | identifier"""
+    # FIXME : Remove identifier?
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
@@ -680,8 +682,6 @@ def p_base_primary_expression(p):
 #     | qualified_name LPAREN ASTERISK RPAREN                #functionCall
 #     |      #functionCall
 #     | LPAREN query RPAREN                                  #subqueryExpression
-#     | CASE value_expression when_clause+ else_opt END      #simpleCase
-#     | CASE whenClause+ else_opt END                        #searchedCase
 #     | CAST RPAREN expression AS type LPAREN                #cast
 #     | '(' expression (',' expression)+ ')'                 #rowConstructor
 #     | ROW LPAREN expressions RPAREN                        #rowConstructor
@@ -695,6 +695,45 @@ def p_function_call(p):
     r"""function_call : qualified_name LPAREN call_list RPAREN"""
     distinct = p[3] is None or p[3] == "DISTINCT"
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=distinct, arguments=p[3])
+
+
+def p_case_specification(p):
+    r"""case_specification : simple_case
+                           | searched_case"""
+    p[0] = p[1]
+
+
+def p_simple_case(p):
+    r"""simple_case : CASE value_expression when_clauses else_opt END"""
+    p[0] = SimpleCaseExpression(p.lineno(1), p.lexpos(1), operand=p[2], when_clauses=p[3], default_value=p[4])
+
+
+def p_searched_case(p):
+    r"""searched_case : CASE when_clauses else_opt END"""
+    p[0] = SearchedCaseExpression(p.lineno(1), p.lexpos(1), when_clauses=p[2], default_value=p[3])
+
+
+def p_when_clauses(p):
+    r"""when_clauses : when_clauses when_clause
+                     | when_clause"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    elif isinstance(p[1], list):
+        p[1].append(p[2])
+        p[0] = p[1]
+    else:
+        p[0] = None
+
+
+def p_when_clause(p):
+    r"""when_clause : WHEN search_condition THEN value_expression"""
+    p[0] = WhenClause(p.lineno(1), p.lexpos(1), operand=p[2], result=p[4])
+
+
+def p_else_clause(p):
+    r"""else_opt : ELSE value_expression
+                 | empty"""
+    p[0] = p[2] if p[1] else None
 
 
 def p_call_list(p):
@@ -792,11 +831,6 @@ def p_sign(p):
     p[0] = p[1]
 
 
-def p_when_clause(p):
-    r"""when_clause : WHEN search_condition THEN value_expression"""
-    p[0] = WhenClause(p.lineno(1), p.lexpos(1), operand=p[2], result=p[4])
-
-
 def p_table_element(p):
     """table_element : IDENTIFIER type"""
     p[0] = TableElement(p.lineno(1), p.lexpos(1), name=p[1], typedef=p[2])
@@ -867,7 +901,7 @@ parser = yacc.yacc()
 
 
 adql = """
-SELECT TOP 10 *
+SELECT TOP 10 CASE WHEN x=1 THEN y ELSE z END, a
 FROM "II/295/SSTGC","II/293/glimpse"
 WHERE 1=CONTAINS(POINT('ICRS',"II/295/SSTGC".RAJ2000,"II/295/SSTGC".DEJ2000),
              BOX('GALACTIC', 0, 0, 30/60., 10/60.))
@@ -875,13 +909,13 @@ WHERE 1=CONTAINS(POINT('ICRS',"II/295/SSTGC".RAJ2000,"II/295/SSTGC".DEJ2000),
             CIRCLE('ICRS',"II/293/glimpse".RAJ2000,"II/293/glimpse".DEJ2000, 2/3600.0))
 """
 
-print(repr(parser.parse(adql, tracking=True, debug=True)))
+print(repr(parser.parse(adql, tracking=True)))
 
 # print(repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True)))
 #
 # print(repr(parser.parse('SELECT "!" FROM dual x', tracking=True, debug=True)))
 # print(repr(parser.parse("select r(x, 1, 2, CURRENT_TIME)", tracking=True)))
-#print(repr(parser.parse("(SELECT 1)", tracking=True, debug=True)))
+# print(repr(parser.parse("(SELECT 1)", tracking=True, debug=True)))
 
 #
 # print(repr(parser.parse("select x from ( select 1 from dual as x) y", tracking=True)))
