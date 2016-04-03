@@ -1,4 +1,4 @@
-from lacquer.tree import JoinOn
+from .join_criteria import JoinOn
 
 
 class AstVisitor(object):
