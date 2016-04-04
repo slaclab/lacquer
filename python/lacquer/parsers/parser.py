@@ -141,7 +141,7 @@ def p_query_no_with(p):
         limit = p[3]
 
         # Support ADQL TOP
-        if 'limit' in query:
+        if hasattr(query, 'limit'):
             limit = query.limit
         p[0] = Query(p.lineno(1), p.lexpos(1), with_=None,
                      query_body=QuerySpecification(
@@ -237,22 +237,14 @@ def p_nonjoin_query_primary(p):
     if len(p) == 2:
         p[0] = p[1]
     else:
-        if p[1] == "TABLE":
-            p[0] = Table(p.lineno(1), p.lexpos(1), name=p[2])
-        elif p[1] == "VALUES":
-            p[0] = Values(p.lineno(1), p.lexpos(1), rows=p[2])
-        elif p[1] == "(":
-            p[0] = TableSubquery(p.lineno(1), p.lexpos(1), query=p[2])
+        p[0] = TableSubquery(p.lineno(1), p.lexpos(1), query=p[2])
 
 
 def p_simple_table(p):
     r"""simple_table : query_specification
                      | explicit_table
                      | table_value_constructor"""
-    if p.slice[1].type == "query_specification":
-        p[0] = TableSubquery(p.lineno(1), p.lexpos(1), query=p[1])
-    else:
-        p[0] = p[1]
+    p[0] = p[1]
 
 
 def p_explicit_table(p):
