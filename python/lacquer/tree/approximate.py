@@ -7,7 +7,7 @@ class Approximate(Node):
         self.confidence = confidence
 
     def accept(self, visitor, context):
-        visitor.visit_approximate(self, context)
+        return visitor.visit_approximate(self, context)
 
     # def __str__(self):
     #     """

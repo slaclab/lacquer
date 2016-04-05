@@ -7,7 +7,7 @@ class Relation(Node):
         super(Relation, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_relation(self, context)
+        return visitor.visit_relation(self, context)
 
 
 class AliasedRelation(Relation):
@@ -18,7 +18,7 @@ class AliasedRelation(Relation):
         self.column_names = column_names
 
     def accept(self, visitor, context):
-        visitor.visit_aliased_relation(self, context)
+        return visitor.visit_aliased_relation(self, context)
 
     def __str__(self):
         return node_str_omit_none(self,
@@ -37,7 +37,7 @@ class Join(Relation):
         self.criteria = criteria
 
     def accept(self, visitor, context):
-        visitor.visit_join(self, context)
+        return visitor.visit_join(self, context)
 
     def __str__(self):
         return node_str_omit_none(self,
@@ -52,7 +52,7 @@ class QueryBody(Relation):
         super(QueryBody, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_query_body(self, context)
+        return visitor.visit_query_body(self, context)
 
 
 # class Unnest(Relation):
@@ -62,7 +62,7 @@ class QueryBody(Relation):
 #         self.with_ordinality = with_ordinality
 #
 #     def accept(self, visitor, context):
-#         visitor.visit_unnest(self, context)
+#         return visitor.visit_unnest(self, context)
 #
 #     def __str__(self):
 #         """

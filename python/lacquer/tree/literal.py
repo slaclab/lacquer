@@ -19,7 +19,7 @@ class IntervalLiteral(Literal):
     #     pass
 
     def accept(self, visitor, context):
-        visitor.visit_interval_literal(self, context)
+        return visitor.visit_interval_literal(self, context)
 
     
 class TimestampLiteral(Literal):
@@ -28,7 +28,7 @@ class TimestampLiteral(Literal):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_timestamp_literal(self, context)
+        return visitor.visit_timestamp_literal(self, context)
 
 
 class NullLiteral(Literal):
@@ -36,7 +36,7 @@ class NullLiteral(Literal):
         super(NullLiteral, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_null_literal(self, context)
+        return visitor.visit_null_literal(self, context)
 
 
 class DoubleLiteral(Literal):
@@ -45,7 +45,7 @@ class DoubleLiteral(Literal):
         self.value = float(value)
 
     def accept(self, visitor, context):
-        visitor.visit_double_literal(self, context)
+        return visitor.visit_double_literal(self, context)
 
 
 # class GenericLiteral(Literal):
@@ -55,7 +55,7 @@ class DoubleLiteral(Literal):
 #         self.value = value
 #
 #     def accept(self, visitor, context):
-#         visitor.visit_generic_literal(self, context)
+#         return visitor.visit_generic_literal(self, context)
 
 
 class StringLiteral(Literal):
@@ -64,7 +64,7 @@ class StringLiteral(Literal):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_string_literal(self, context)
+        return visitor.visit_string_literal(self, context)
 
 
 class TimeLiteral(Literal):
@@ -73,7 +73,7 @@ class TimeLiteral(Literal):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_time_literal(self, context)
+        return visitor.visit_time_literal(self, context)
 
     def __str__(self):
         return "TIME '%s'" % self.value
@@ -85,7 +85,7 @@ class LongLiteral(Literal):
         self.value = integer_types[-1](value)
 
     def accept(self, visitor, context):
-        visitor.visit_long_literal(self, context)
+        return visitor.visit_long_literal(self, context)
 
     def __str__(self):
         return self.value
@@ -101,4 +101,4 @@ class BooleanLiteral(Literal):
         self.value = value.lower() == "true"
 
     def accept(self, visitor, context):
-        visitor.visit_boolean_literal(self, context)
+        return visitor.visit_boolean_literal(self, context)

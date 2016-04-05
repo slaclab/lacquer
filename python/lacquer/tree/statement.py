@@ -6,7 +6,7 @@ class Statement(Node):
         super(Statement, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_statement(self, context)
+        return visitor.visit_statement(self, context)
 
     
 class Delete(Statement):
@@ -16,7 +16,7 @@ class Delete(Statement):
         self.where = where
 
     def accept(self, visitor, context):
-        visitor.visit_delete(self, context)
+        return visitor.visit_delete(self, context)
 
     # def __str__(self):
     #     """
@@ -34,7 +34,7 @@ class Query(Statement):
         # self.approximate = approximate
 
     def accept(self, visitor, context):
-        visitor.visit_query(self, context)
+        return visitor.visit_query(self, context)
 
     # def __str__(self):
     #     """
@@ -52,7 +52,7 @@ class Insert(Statement):
         self.columns = columns
 
     def accept(self, visitor, context):
-        visitor.visit_insert(self, context)
+        return visitor.visit_insert(self, context)
 
     # def __str__(self):
     #     """
@@ -67,7 +67,7 @@ class ShowColumns(Statement):
         self.table = table
 
     def accept(self, visitor, context):
-        visitor.visit_show_columns(self, context)
+        return visitor.visit_show_columns(self, context)
 
     # def __str__(self):
     #     """
@@ -82,7 +82,7 @@ class RenameTable(Statement):
         self.target = target
 
     def accept(self, visitor, context):
-        visitor.visit_rename_table(self, context)
+        return visitor.visit_rename_table(self, context)
 
     # def __str__(self):
     #     """
@@ -102,7 +102,7 @@ class CreateTable(Statement):
     #     pass
 
     def accept(self, visitor, context):
-        visitor.visit_create_table(self, context)
+        return visitor.visit_create_table(self, context)
 
     # def __str__(self):
     #     """
@@ -121,7 +121,7 @@ class DropView(Statement):
     #     pass
 
     def accept(self, visitor, context):
-        visitor.visit_drop_view(self, context)
+        return visitor.visit_drop_view(self, context)
 
     # def __str__(self):
     #     """
@@ -134,7 +134,7 @@ class Rollback(Statement):
         super(Rollback, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_rollback(self, context)
+        return visitor.visit_rollback(self, context)
 
     # def __str__(self):
     #     """
@@ -147,7 +147,7 @@ class ShowSession(Statement):
         super(ShowSession, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_show_session(self, context)
+        return visitor.visit_show_session(self, context)
 
     # def __str__(self):
     #     """
@@ -162,7 +162,7 @@ class Call(Statement):
         self.arguments = arguments
 
     def accept(self, visitor, context):
-        visitor.visit_call(self, context)
+        return visitor.visit_call(self, context)
 
     # def __str__(self):
     #     """
@@ -177,7 +177,7 @@ class Use(Statement):
         self.schema = schema
 
     def accept(self, visitor, context):
-        visitor.visit_use(self, context)
+        return visitor.visit_use(self, context)
 
     # def __str__(self):
     #     """
@@ -194,7 +194,7 @@ class ShowPartitions(Statement):
         self.limit = limit
 
     def accept(self, visitor, context):
-        visitor.visit_show_partitions(self, context)
+        return visitor.visit_show_partitions(self, context)
 
     # def __str__(self):
     #     """
@@ -208,7 +208,7 @@ class ShowCatalogs(Statement):
         super(ShowCatalogs, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_show_catalogs(self, context)
+        return visitor.visit_show_catalogs(self, context)
 
     # def __str__(self):
     #     """
@@ -222,7 +222,7 @@ class StartTransaction(Statement):
         self.transaction_modes = transaction_modes
 
     def accept(self, visitor, context):
-        visitor.visit_start_transaction(self, context)
+        return visitor.visit_start_transaction(self, context)
 
     # def __str__(self):
     #     """
@@ -241,7 +241,7 @@ class CreateView(Statement):
     #     pass
 
     def accept(self, visitor, context):
-        visitor.visit_create_view(self, context)
+        return visitor.visit_create_view(self, context)
 
     # def __str__(self):
     #     """
@@ -257,7 +257,7 @@ class SetSession(Statement):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_set_session(self, context)
+        return visitor.visit_set_session(self, context)
 
     # def __str__(self):
     #     """
@@ -277,7 +277,7 @@ class CreateTableAsSelect(Statement):
     #     pass
 
     def accept(self, visitor, context):
-        visitor.visit_create_table_as_select(self, context)
+        return visitor.visit_create_table_as_select(self, context)
 
     # def __str__(self):
     #     """
@@ -294,7 +294,7 @@ class RenameColumn(Statement):
         self.target = target
 
     def accept(self, visitor, context):
-        visitor.visit_rename_column(self, context)
+        return visitor.visit_rename_column(self, context)
 
     def __str__(self):
         """
@@ -310,7 +310,7 @@ class ResetSession(Statement):
         self.name = name
 
     def accept(self, visitor, context):
-        visitor.visit_reset_session(self, context)
+        return visitor.visit_reset_session(self, context)
 
     # def __str__(self):
     #     """
@@ -324,7 +324,7 @@ class ShowSchemas(Statement):
         self.catalog = catalog
 
     def accept(self, visitor, context):
-        visitor.visit_show_schemas(self, context)
+        return visitor.visit_show_schemas(self, context)
 
     def __str__(self):
         """
@@ -339,7 +339,7 @@ class DropTable(Statement):
         self.exists = exists
 
     def accept(self, visitor, context):
-        visitor.visit_drop_table(self, context)
+        return visitor.visit_drop_table(self, context)
 
     # def __str__(self):
     #     """
@@ -354,7 +354,7 @@ class ShowTables(Statement):
         self.like_pattern = like_pattern
 
     def accept(self, visitor, context):
-        visitor.visit_show_tables(self, context)
+        return visitor.visit_show_tables(self, context)
 
     # def __str__(self):
     #     """
@@ -369,7 +369,7 @@ class Explain(Statement):
         self.options = options
 
     def accept(self, visitor, context):
-        visitor.visit_explain(self, context)
+        return visitor.visit_explain(self, context)
 
     # def __str__(self):
     #     """
@@ -384,7 +384,7 @@ class AddColumn(Statement):
         self.column = column
 
     def accept(self, visitor, context):
-        visitor.visit_add_column(self, context)
+        return visitor.visit_add_column(self, context)
 
     # def __str__(self):
     #     """
@@ -397,7 +397,7 @@ class Commit(Statement):
         super(Commit, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_commit(self, context)
+        return visitor.visit_commit(self, context)
 
     # def __str__(self):
     #     """
@@ -410,7 +410,7 @@ class ShowFunctions(Statement):
         super(ShowFunctions, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_show_functions(self, context)
+        return visitor.visit_show_functions(self, context)
 
     # def __str__(self):
     #     """

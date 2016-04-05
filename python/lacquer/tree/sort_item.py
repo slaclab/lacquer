@@ -9,7 +9,7 @@ class SortItem(Node):
         self.null_ordering = null_ordering
 
     def accept(self, visitor, context):
-        visitor.visit_sort_item(self, context)
+        return visitor.visit_sort_item(self, context)
 
     # def __str__(self):
     #     """

@@ -6,7 +6,7 @@ class ExplainOption(Node):
         super(ExplainOption, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_explain_option(self, context)
+        return visitor.visit_explain_option(self, context)
 
 
 class ExplainType(ExplainOption):

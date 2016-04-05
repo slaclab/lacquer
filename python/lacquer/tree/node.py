@@ -10,7 +10,7 @@ class Node(object):
                 setattr(self, attr, value)
 
     def accept(self, visitor, context):
-        visitor.visit_node(self, context)
+        return visitor.visit_node(self, context)
 
     def __str__(self):
         return str({k: v for k, v in self.__dict__.items() if v is not None})

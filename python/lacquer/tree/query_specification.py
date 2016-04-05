@@ -14,7 +14,7 @@ class QuerySpecification(QueryBody):
         self.limit = limit
 
     def accept(self, visitor, context):
-        visitor.visit_query_specification(self, context)
+        return visitor.visit_query_specification(self, context)
 
     # def __str__(self):
     #     """
