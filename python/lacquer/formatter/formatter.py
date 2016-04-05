@@ -1,28 +1,31 @@
-from lacquer.tree import AstVisitor, TableSubquery, JoinUsing, JoinOn, NaturalJoin, ExplainType, ExplainOption, Table
+from lacquer.tree import AstVisitor, TableSubquery, JoinUsing, JoinOn, \
+    NaturalJoin, ExplainType, ExplainFormat, Table, SimpleGroupBy
+
+from lacquer.utils import FIELD_REFERENCE_PREFIX
+
+
+# noinspection PyListCreation
 
 
 class Formatter(AstVisitor):
 
     def visit_row(self, row, unmangle=True):
-        return "ROW ({items})".format(items=[self.process(item, unmangle) for item in row.items])
+        return "ROW (%s)" % ", ".join([self.process(item, unmangle) for item in row.items])
 
     # def visit_node(self, node, Boolean unmangle_names):
     #     throw new UnsupportedOperationException()
 
-    def visit_row(self, node, unmangle_names):
-        return "ROW ({items})".format(items=[self.process(item, unmangle_names) for item in row.items])
-
     def visit_expression(self, node, unmangle_names):
-        raise Exception("not yet implemented: %s.visit%s" % (self.__class__.__name__, node.__class__.__name__))
+        raise NotImplementedError("not implemented: %s.visit%s" % (self.__class__.__name__, node.__class__.__name__))
 
     def visit_at_time_zone(self, node, context):
-        return "%s AT TIME ZONE %s" %(self.process(node.value, context), self.process(node.get_time_zone(), context))
+        return "%s AT TIME ZONE %s" % (self.process(node.value, context), self.process(node.get_time_zone(), context))
 
     def visit_current_time(self, node, unmangle_names):
-        return "%s%s" %(node.type.namem, "({})".format(node.precision) if node.precision else "")
+        return "%s%s" % (node.type.namem, "(%s)" % node.precision if node.precision else "")
 
     def visit_extract(self, node, unmangle_names):
-        return "EXTRACT(" + node.field + " FROM " + self.process(node.expression, unmangle_names) + ")"
+        return "EXTRACT(%s FROM %s )" % (node.field, self.process(node.expression, unmangle_names))
 
     def visit_boolean_literal(self, node, unmangle_names):
         return str(node.value)
@@ -39,11 +42,10 @@ class Formatter(AstVisitor):
     #     return "ARRAY[" + ",".join(value_strings.build()) + "]"
 
     def visit_subscript_expression(self, node, unmangle_names):
-        return format_sql(node.base, unmangle_names) + "[" + format_sql(node.index, unmangle_names) + "]"
+        return format_sql(node.base, unmangle_names) + "[%s]" % format_sql(node.index, unmangle_names)
 
     def visit_long_literal(self, node, unmangle_names):
         return str(node.value)
-
 
     def visit_double_literal(self, node, unmangle_names):
         return str(node.value)
@@ -52,10 +54,10 @@ class Formatter(AstVisitor):
     #     return node.type + " " + format_string_literal(node.value)
 
     def visit_time_literal(self, node, unmangle_names):
-        return "TIME '" + node.value + "'"
+        return "TIME '%s'" % node.value
 
     def visit_timestamp_literal(self, node, unmangle_names):
-        return "TIMESTAMP '" + node.value + "'"
+        return "TIMESTAMP '%s'" % node.value
 
     def visit_null_literal(self, node, unmangle_names):
         return "null"
@@ -75,15 +77,11 @@ class Formatter(AstVisitor):
         return "EXISTS (" + format_sql(node.subquery, unmangle_names) + ")"
 
     def visit_qualified_name_reference(self, node, unmangle_names):
-        return self.format_qualified_name(node.name)
+        return _format_qualified_name(node.name)
 
     def visit_dereference_expression(self, node, unmangle_names):
         base_string = self.process(node.base, unmangle_names)
-        return base_string + "." + self._format_identifier(node.field_name)
-
-    def _format_qualified_name(self, name):
-        parts = [self._format_identifier(part) for part in name.parts]
-        return '.'.join(parts)
+        return base_string + "." + format_identifier(node.field_name)
 
     # def visit_input_reference(self, node, unmangle_names):
     #     # add colon so this won't parse
@@ -97,16 +95,17 @@ class Formatter(AstVisitor):
         if node.is_distinct():
             arguments = "DISTINCT " + arguments
 
-        if unmangle_names and str(node.name).startswith(QueryUtil.FIELD_REFERENCE_PREFIX):
-            if len(node.arguments) == 1:
-                raise ValueError("Expected only one argument to field reference")
-            name = QualifiedName.of(QueryUtil.unmangle_field_reference(node.name))
-            ret += arguments + "." + name
+        if unmangle_names and str(node.name).startswith(FIELD_REFERENCE_PREFIX):
+            raise NotImplementedError("Mangled names not supported right now")
+            # if len(node.arguments) == 1:
+            #     raise ValueError("Expected only one argument to field reference")
+            # name = QualifiedName.of(unmangle_field_reference(node.name))
+            # ret += arguments + "." + name
         else:
-            ret += self._format_qualified_name(node.name) + '(' + arguments + ')'
+            ret += _format_qualified_name(node.name) + '(' + arguments + ')'
 
         if node.window:
-            ret += " OVER " + self.visit_window(node.window.get(), unmangle_names)
+            ret += " OVER " + self.visit_window(node.window, unmangle_names)
 
         return ret
 
@@ -114,7 +113,7 @@ class Formatter(AstVisitor):
     #     pass
 
     def visit_logical_binary_expression(self, node, unmangle_names):
-        return format_binary_expression(node.type, node.left, node.right, unmangle_names)
+        return self._format_binary_expression(node.type, node.left, node.right, unmangle_names)
 
     def visit_not_expression(self, node, unmangle_names):
         return "(NOT " + self.process(node.value, unmangle_names) + ")"
@@ -129,7 +128,7 @@ class Formatter(AstVisitor):
         return "(" + self.process(node.value, unmangle_names) + " IS NOT NULL)"
 
     def visit_None_if_expression(self, node, unmangle_names):
-        return "NULLIF(" + self.process(node.first, unmangle_names) + ", " + self.process(node.second, unmangle_names) + ')'
+        return "NULLIF(%s, %s)" % (self.process(node.first, unmangle_names), self.process(node.second, unmangle_names))
 
     def visit_if_expression(self, node, unmangle_names):
         ret = "IF(" + self.process(node.condition, unmangle_names)
@@ -150,7 +149,7 @@ class Formatter(AstVisitor):
 
         if node.sign == "=":
             # this is to avoid turning a sequence of "-" into a comment (i.e., "-- comment")
-            separator = " " if node.value.startswith("-") else  ""
+            separator = " " if node.value.startswith("-") else ""
             return "-" + separator + value
         return "+" + value
 
@@ -226,11 +225,11 @@ class Formatter(AstVisitor):
         parts = []
 
         if node.partition_by:
-            parts.add("PARTITION BY " + self._join_expressions(node.partition_by, unmangle_names))
+            parts.append("PARTITION BY " + self._join_expressions(node.partition_by, unmangle_names))
         if node.order_by:
-            parts.add("ORDER BY " + format_sort_items(node.order_by, unmangle_names))
+            parts.append("ORDER BY " + format_sort_items(node.order_by, unmangle_names))
         if node.frame:
-            parts.add(self.process(node.frame.get(), unmangle_names))
+            parts.append(self.process(node.frame, unmangle_names))
 
         return '(' + ' '.join(parts) + ')'
 
@@ -249,11 +248,11 @@ class Formatter(AstVisitor):
     #         # case UNBOUNDED_PRECEDING:
     #             return "UNBOUNDED PRECEDING"
     #         # case PRECEDING:
-    #             return self.process(node.value.get(), unmangle_names) + " PRECEDING"
+    #             return self.process(node.value, unmangle_names) + " PRECEDING"
     #         # case CURRENT_ROW:
     #             return "CURRENT ROW"
     #         # case FOLLOWING:
-    #             return self.process(node.value.get(), unmangle_names) + " FOLLOWING"
+    #             return self.process(node.value, unmangle_names) + " FOLLOWING"
     #         # case UNBOUNDED_FOLLOWING:
     #             return "UNBOUNDED FOLLOWING"
 
@@ -264,44 +263,15 @@ class Formatter(AstVisitor):
         return ", ".join([self.process(e, unmangle_names) for e in expressions])
 
 
-
-"""
-
-
-    def format_group_by(grouping_elements)
-        Immutable_list.Builder<String> result_strings = Immutable_list.builder()
-
-        for (Grouping_element grouping_element : grouping_elements:
-            String result = ""
-            if grouping_element instanceof Simple_group_by:
-                Set<Expression> columns = Immutable_set.copy_of(((Simple_group_by) grouping_element).get_column_expressions())
-                if columns.size() == 1:
-                    result = format_expression(get_only_element(columns))
-                else:
-                    result = format_grouping_set(columns)
-            else if grouping_element instanceof Grouping_sets:
-                result = format("GROUPING SETS (%s)", ", ".join(
-                        grouping_element.enumerate_grouping_sets().stream()
-                                .map(Expression_formatter::format_grouping_set)
-                                .iterator()))
-            else if grouping_element instanceof Cube:
-                result = format("CUBE %s", format_grouping_set(((Cube) grouping_element).columns))
-            else if grouping_element instanceof Rollup:
-                result = format("ROLLUP %s", format_grouping_set(((Rollup) grouping_element).columns))
-            result_strings.add(result)
-        return ", ".join(result_strings.build())
-
-
-
-"""
-
-
+# noinspection SqlNoDataSourceInspection
 class SqlFormatter(AstVisitor):
+
     INDENT = "   "
 
     def __init__(self, builder, unmangle_names):
+        super(SqlFormatter, self).__init__()
         self.builder = builder
-        self._unmangled_names = unmangle_names
+        self._unmangle_names = unmangle_names
 
     def visit_node(self, node, indent):
         raise NotImplementedError("not yet implemented: " + node)
@@ -309,7 +279,7 @@ class SqlFormatter(AstVisitor):
     def visit_expression(self, node, indent):
         if indent == 0:
             raise ValueError("visit_expression should only be called at root")
-        self.builder.append(format_expression(node, unmangled_names))
+        self.builder.append(format_expression(node, self._unmangle_names))
         return None
 
     def visit_unnest(self, node, indent):
@@ -325,23 +295,22 @@ class SqlFormatter(AstVisitor):
                 self.builder.append("\n  ")
             queries = with_.queries
             for query in queries:
-                query = queries.next()
                 self._append(indent, query.name)
-                append_alias_columns(builder, query.get_column_names())
+                append_alias_columns(self.builder, query.get_column_names())
                 self.builder.append(" AS ")
                 self.process(TableSubquery(query=query.query), indent)
                 self.builder.append('\n')
                 if queries.has_next():
                     self.builder.append(", ")
 
-        process_relation(node.query_body, indent)
+        self._process_relation(node.query_body, indent)
 
         if node.order_by:
             self._append(indent, "ORDER BY " + format_sort_items(node.order_by))
             self.builder.append('\n')
 
-        if node.limit.is_present():
-            self._append(indent, "LIMIT " + node.limit.get())
+        if node.limit:
+            self._append(indent, "LIMIT " + node.limit)
             self.builder.append('\n')
 
         if node.approximate:
@@ -380,11 +349,10 @@ class SqlFormatter(AstVisitor):
             self._append(indent, "ORDER BY " + format_sort_items(node.order_by))
             self.builder.append('\n')
 
-        if node.limit.is_present():
-            self._append(indent, "LIMIT " + node.limit.get())
+        if node.limit:
+            self._append(indent, "LIMIT " + node.limit)
             self.builder.append('\n')
         return None
-
 
     def visit_select(self, node, indent):
         self._append(indent, "SELECT")
@@ -395,21 +363,21 @@ class SqlFormatter(AstVisitor):
             first = True
             for item in node.select_items:
                 self.builder.append("\n")
-                self.builder.append(self._indent_string(indent))
+                self.builder.append(_indent_string(indent))
                 self.builder.append("  " if first else ", ")
 
                 self.process(item, indent)
                 first = False
         else:
             self.builder.append(' ')
-            self.process(get_only_element(node.select_items), indent)
+            self.process(node.select_items[0], indent)
 
         self.builder.append('\n')
         return None
 
     def visit_single_column(self, node, indent):
         self.builder.append(format_expression(node.expression))
-        if node.alias.is_present():
+        if node.alias:
             self.builder.append(' "' + node.alias + '"')  # TODO: handle quoting properly
         return None
 
@@ -489,7 +457,7 @@ class SqlFormatter(AstVisitor):
         first = True
         for row in node.rows:
             self.builder.append("\n")
-            self.builder.append(self._indent_string(indent))
+            self.builder.append(_indent_string(indent))
             self.builder.append("  " if first else ", ")
 
             self.builder.append(format_expression(row))
@@ -506,21 +474,21 @@ class SqlFormatter(AstVisitor):
         return None
 
     def visit_union(self, node, indent):
-        relations = [self.process_relation(relation, indent) for relation in node.relations]
+        relations = [self._process_relation(relation, indent) for relation in node.relations]
         intersect = "UNION " + "ALL " if not node.distinct else ""
         self.builder.append(intersect.join(relations))
 
         return None
 
     def visit_except(self, node, indent):
-        self.process_relation(node.left, indent)
+        self._process_relation(node.left, indent)
         self.builder.append("EXCEPT " + "ALL " if not node.distinct else "")
-        self.process_relation(node.right, indent)
+        self._process_relation(node.right, indent)
 
         return None
 
     def visit_intersect(self, node, indent):
-        relations = [self.process_relation(relation, indent) for relation in node.relations]
+        relations = [self._process_relation(relation, indent) for relation in node.relations]
         intersect = "INTERSECT " + "ALL " if not node.distinct else ""
         self.builder.append(intersect.join(relations))
 
@@ -558,7 +526,7 @@ class SqlFormatter(AstVisitor):
             else:
                 raise ValueError("unhandled explain option: " + option)
 
-        if not options.empty:
+        if options:
             self.builder.append("(")
             self.builder.append(", ".join(options))
             self.builder.append(")")
@@ -579,7 +547,7 @@ class SqlFormatter(AstVisitor):
 
         if node.catalog:
             self.builder.append(" FROM ")
-            self.builder.append(node.catalog.get())
+            self.builder.append(node.catalog)
 
         return None
 
@@ -607,15 +575,15 @@ class SqlFormatter(AstVisitor):
 
         if node.where:
             self.builder.append(" WHERE ")
-            self.builder.append(format_expression(node.where.get()))
+            self.builder.append(format_expression(node.where))
 
         if node.order_by:
             self.builder.append(" ORDER BY ")
-            self.builder.append(format_sort_items(node.get_order_by()))
+            self.builder.append(format_sort_items(node.order_by))
 
         if node.limit:
             self.builder.append(" LIMIT ")
-            self.builder.append(node.limit.get())
+            self.builder.append(node.limit)
         return None
 
     def visit_show_functions(self, node, context):
@@ -630,9 +598,9 @@ class SqlFormatter(AstVisitor):
         self.builder.append("DELETE FROM ")
         self.builder.append(node.table.name)
 
-        if node.where.is_present():
+        if node.where:
             self.builder.append(" WHERE ")
-            self.builder.append(format_expression(node.where.get()))
+            self.builder.append(format_expression(node.where))
 
         return None
 
@@ -644,7 +612,7 @@ class SqlFormatter(AstVisitor):
 
         if node.properties:
             self.builder.append(" WITH (")
-            self.builder.append(", ".join(["%s = %s" % (k, v) for k, v  in node.properties.items()]))
+            self.builder.append(", ".join(["%s = %s" % (k, v) for k, v in node.properties.items()]))
             self.builder.append(")")
 
         self.builder.append(" AS ")
@@ -668,7 +636,7 @@ class SqlFormatter(AstVisitor):
 
         if node.properties:
             self.builder.append(" WITH (")
-            self.builder.append(", ".join(["%s = %s" % (k, v) for k, v  in node.properties.items()]))
+            self.builder.append(", ".join(["%s = %s" % (k, v) for k, v in node.properties.items()]))
             self.builder.append(")")
 
         return None
@@ -714,9 +682,9 @@ class SqlFormatter(AstVisitor):
         self.builder.append(node.target)
         self.builder.append(" ")
 
-        if node.columns.is_present():
+        if node.columns:
             self.builder.append("(")
-            self.builder.append(", ".join(node.columns.get()))
+            self.builder.append(", ".join(node.columns))
             self.builder.append(") ")
 
         self.process(node.query, indent)
@@ -738,7 +706,7 @@ class SqlFormatter(AstVisitor):
         return None
 
     def visit_call_argument(self, node, indent):
-        if node.name.is_present():
+        if node.name:
             self.builder.append(node.name)
             self.builder.append(" => ")
         self.builder.append(format_expression(node.value))
@@ -808,40 +776,81 @@ class SqlFormatter(AstVisitor):
             self.process(relation, indent)
 
     def _append(self, indent, value):
-        self.builder.append(self._indent_string(indent))
+        self.builder.append(_indent_string(indent))
         self.builder.append(value)
 
-    def _indent_string(self, indent):
-        return SqlFormatter.INDENT * indent
 
 """
 Convenience methods
 """
+
+
+def format_expression(expression, unmangle_names=True):
+    return Formatter().process(expression, unmangle_names)
+
+
+def sort_item_formatter(sort_item, unmangle_names):
+    builder = []
+    builder.append(format_expression(sort_item.sort_key, unmangle_names))
+    builder.append(" ASC" if sort_item.ordering == "ASC" else " DESC")
+
+    builder.append(" NULLS FIRST" if sort_item.null_ordering == "FIRST" else " NULLS LAST")
+
+    if sort_item.null_ordering == "FIRST":
+        builder.append(" NULLS FIRST")
+    elif sort_item.null_ordering == "LAST":
+        builder.append(" NULLS LAST")
+
+    return "".join(builder)
+
 
 def format_identifier(s):
     # TODO: handle escaping properly
     return '"' + s + '"'
 
 
+def _format_qualified_name(name):
+    parts = [format_identifier(part) for part in name.parts]
+    return '.'.join(parts)
+
+
+def format_group_by(grouping_elements):
+    result_strings = []
+
+    for grouping_element in grouping_elements:
+        result = ""
+        if isinstance(grouping_element, SimpleGroupBy):
+            columns = grouping_element.columns
+            if len(columns) == 1:
+                result = format_expression(columns[0])
+            else:
+                raise NotImplementedError("Grouping Sets not Implemented")
+                # result = format_grouping_set(columns)
+        # elif isintance(grouping_element, GroupingSets):
+        #     raise NotImplementedError("Grouping Sets not Implemented")
+        #     # formatted_gs = [format_grouping_set(gs) for gs in grouping_element.grouping_sets]
+        #     # result = format("GROUPING SETS (%s)", ", ".join(formatted_gs)
+        # elif isinstance(grouping_element, Cube):
+        #     # result = format("CUBE %s", format_grouping_set(grouping_element.columns))
+        # elif isinstance(grouping_element, Rollup):
+        #     # result = format("ROLLUP %s", format_grouping_set(grouping_element.columns))
+        result_strings.append(result)
+    return ", ".join(result_strings)
+
+
 def format_string_literal(s):
     return "'" + s.replace("'", "''") + "'"
 
 
-def format_sort_items(sort_items):
-    return format_sort_items(sort_items, True)
+def _indent_string(indent):
+    return SqlFormatter.INDENT * indent
 
 
-def format_sort_items(sort_items, unmangle_names):
+def format_sort_items(sort_items, unmangle_names=True):
     return ", ".join([sort_item_formatter(sort_item, unmangle_names) for sort_item in sort_items])
 
 
-def format_sql(root):
-    builder = []
-    SqlFormatter(builder, True).process(root, 0)
-    return "".join(builder)
-
-
-def format_sql(root, unmangle_names):
+def format_sql(root, unmangle_names=True):
     builder = []
     SqlFormatter(builder, unmangle_names).process(root, 0)
     return "".join(builder)
@@ -852,4 +861,3 @@ def append_alias_columns(builder, columns):
         builder.append(" (")
         builder.append(", ".join(columns))
         builder.append(')')
-
