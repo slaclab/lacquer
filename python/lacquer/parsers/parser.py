@@ -454,11 +454,12 @@ def p_identifiers(p):
 # Potentially Aliased table_reference
 def p_aliased_relation(p):
     r"""aliased_relation : qualified_name alias_opt"""
+    table = Table(p.lineno(1), p.lexpos(1), name=p[1])
     if p[2]:
         p[0] = AliasedRelation(p.lineno(1), p.lexpos(1),
-                               relation=p[1], alias=p[2])  # , column_names=column_names)
+                               relation=table, alias=p[2])  # , column_names=column_names)
     else:
-        p[0] = p[1]
+        p[0] = table
 
 
 # Notes: 'AS' in as_opt not supported on most databases
@@ -665,7 +666,11 @@ def p_base_primary_expression(p):
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
-        p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1])
+        p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1][1:-1])  # FIXME: trim quotes?
+    elif p.slice[1].type == "identifier":
+        p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=QualifiedName([p[1]]))
+    elif p.slice[1].type == "qualified_name":
+        p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=p[1])
     else:
         p[0] = p[1]
 
@@ -867,7 +872,7 @@ def p_non_reserved(p):
 def p_quoted_identifier(p):
     r"""quoted_identifier : QUOTED_IDENTIFIER
                           | BACKQUOTED_IDENTIFIER"""
-    p[0] = p[1]  # FIXME : Trim quotes ?
+    p[0] = p[1][1:-1]  # FIXME : Trim quotes ?
 
 
 def p_number(p):
@@ -902,6 +907,9 @@ WHERE 1=CONTAINS(POINT('ICRS',"II/295/SSTGC".RAJ2000,"II/295/SSTGC".DEJ2000),
 """
 
 print(repr(parser.parse(adql, tracking=True)))
+
+from lacquer.formatter.formatter import format_sql
+print(format_sql(parser.parse(adql, tracking=True)))
 
 # print(repr(parser.parse("SELECT 1 FROM DUAL WHERE 1=1", tracking=True)))
 #
