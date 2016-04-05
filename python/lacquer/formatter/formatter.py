@@ -19,7 +19,7 @@ class Formatter(AstVisitor):
         raise NotImplementedError("not implemented: %s.visit%s" % (self.__class__.__name__, node.__class__.__name__))
 
     def visit_at_time_zone(self, node, context):
-        return "%s AT TIME ZONE %s" % (self.process(node.value, context), self.process(node.get_time_zone(), context))
+        return "%s AT TIME ZONE %s" % (self.process(node.value, context), self.process(node.time_zone, context))
 
     def visit_current_time(self, node, unmangle_names):
         return "%s%s" % (node.type.namem, "(%s)" % node.precision if node.precision else "")
@@ -92,7 +92,7 @@ class Formatter(AstVisitor):
         arguments = self._join_expressions(node.arguments, unmangle_names)
         if not node.arguments and "count" == node.name.suffix.lower():
             arguments = "*"
-        if node.is_distinct():
+        if node.distinct:
             arguments = "DISTINCT " + arguments
 
         if unmangle_names and str(node.name).startswith(FIELD_REFERENCE_PREFIX):
@@ -119,12 +119,12 @@ class Formatter(AstVisitor):
         return "(NOT " + self.process(node.value, unmangle_names) + ")"
 
     def visit_comparison_expression(self, node, unmangle_names):
-        return self._format_binary_expression(node.type.value, node.left, node.right, unmangle_names)
+        return self._format_binary_expression(node.type, node.left, node.right, unmangle_names)
 
-    def visit_is_None_predicate(self, node, unmangle_names):
+    def visit_is_null_predicate(self, node, unmangle_names):
         return "(" + self.process(node.value, unmangle_names) + " IS NULL)"
 
-    def visit_is_not_None_predicate(self, node, unmangle_names):
+    def visit_is_not_null_predicate(self, node, unmangle_names):
         return "(" + self.process(node.value, unmangle_names) + " IS NOT NULL)"
 
     def visit_None_if_expression(self, node, unmangle_names):
@@ -139,7 +139,7 @@ class Formatter(AstVisitor):
         return ret
 
     def visit_try_expression(self, node, unmangle_names):
-        return "TRY(" + self.process(node.get_inner_expression(), unmangle_names) + ")"
+        return "TRY(" + self.process(node.inner_expression, unmangle_names) + ")"
 
     def visit_coalesce_expression(self, node, unmangle_names):
         return "COALESCE(" + self._join_expressions(node.operands, unmangle_names) + ")"
@@ -154,7 +154,7 @@ class Formatter(AstVisitor):
         return "+" + value
 
     def visit_arithmetic_binary(self, node, unmangle_names):
-        return self._format_binary_expression(node.type.value, node.left, node.right, unmangle_names)
+        return self._format_binary_expression(node.type, node.left, node.right, unmangle_names)
 
     def visit_like_predicate(self, node, unmangle_names):
         ret = "("
@@ -296,7 +296,7 @@ class SqlFormatter(AstVisitor):
             queries = with_.queries
             for query in queries:
                 self._append(indent, query.name)
-                append_alias_columns(self.builder, query.get_column_names())
+                append_alias_columns(self.builder, query.column_names)
                 self.builder.append(" AS ")
                 self.process(TableSubquery(query=query.query), indent)
                 self.builder.append('\n')
@@ -313,10 +313,10 @@ class SqlFormatter(AstVisitor):
             self._append(indent, "LIMIT " + node.limit)
             self.builder.append('\n')
 
-        if node.approximate:
-            confidence = node.approximate.confidence
-            self._append(indent, "APPROXIMATE AT " + confidence + " CONFIDENCE")
-            self.builder.append('\n')
+        # if node.approximate:
+        #     confidence = node.approximate.confidence
+        #     self._append(indent, "APPROXIMATE AT " + confidence + " CONFIDENCE")
+        #     self.builder.append('\n')
 
         return None
 
@@ -350,16 +350,16 @@ class SqlFormatter(AstVisitor):
             self.builder.append('\n')
 
         if node.limit:
-            self._append(indent, "LIMIT " + node.limit)
+            self._append(indent, "LIMIT %d" % node.limit)
             self.builder.append('\n')
         return None
 
     def visit_select(self, node, indent):
         self._append(indent, "SELECT")
-        if node.is_distinct():
+        if node.distinct:
             self.builder.append(" DISTINCT")
 
-        if node.get_select_items().size() > 1:
+        if len(node.select_items) > 1:
             first = True
             for item in node.select_items:
                 self.builder.append("\n")
@@ -386,7 +386,7 @@ class SqlFormatter(AstVisitor):
         return None
 
     def visit_table(self, node, indent):
-        self.builder.append(node.name)
+        self.builder.append(str(node.name))
         return None
 
     def visit_join(self, node, indent):
@@ -431,7 +431,7 @@ class SqlFormatter(AstVisitor):
         self.builder.append(' ')
         self.builder.append(node.alias)
 
-        append_alias_columns(self.builder, node.get_column_names())
+        append_alias_columns(self.builder, node.column_names)
 
         return None
 
@@ -513,7 +513,7 @@ class SqlFormatter(AstVisitor):
 
     def visit_explain(self, node, indent):
         self.builder.append("EXPLAIN ")
-        if node.is_analyze():
+        if node.analyze:
             self.builder.append("ANALYZE ")
 
         options = []
@@ -763,7 +763,7 @@ class SqlFormatter(AstVisitor):
         self.builder.append(node.table_name)
         self.builder.append(" TO ")
         self.builder.append(node.grantee)
-        if node.is_with_grant_option():
+        if node.with_grant_option:
             self.builder.append(" WITH GRANT OPTION")
 
         return None
