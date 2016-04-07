@@ -317,13 +317,21 @@ def p_where_opt(p):
 def p_group_by_opt(p):
     r"""group_by_opt : GROUP BY grouping_elements
                      | empty"""
-    p[0] = p[3] if p[1] else None
+    # TODO: Support set_quantifier_opt
+    p[0] = GroupBy(p.lineno(1), p.lexpos(1), distinct=False, grouping_elements=p[3]) if p[1] else None
 
 
 def p_grouping_elements(p):
-    r"""grouping_elements : qualified_name
-                          | grouping_elements COMMA qualified_name"""
-    _item_list(p)
+    r"""grouping_elements : value_expression
+                          | grouping_elements COMMA value_expression"""
+    if len(p) == 2:
+        p[0] = [SimpleGroupBy(p.lineno(1), p.lexpos(1), [p[1]])]
+    elif isinstance(p[1], list):
+        element = SimpleGroupBy(p.lineno(3), p.lexpos(3), [p[3]])
+        p[1].append(element)
+        p[0] = p[1]
+    else:
+        p[0] = None
 
 
 def p_having_opt(p):
@@ -539,6 +547,7 @@ def p_predicate(p):
                   | like_predicate
                   | null_predicate
                   | exists_predicate"""
+    # TODO: Fix in_predicate shift problem
     # TODO: maybe:  | value_expression IS not_opt DISTINCT FROM value_expression
     p[0] = p[1]
 
@@ -646,7 +655,7 @@ def p_primary_expression(p):
 
 
 def p_parenthetic_primary_expression(p):
-    r"""parenthetic_primary_expression : LPAREN base_primary_expression RPAREN"""
+    r"""parenthetic_primary_expression : LPAREN value_expression RPAREN"""
     p[0] = p[2]
 
 
@@ -660,8 +669,7 @@ def p_base_primary_expression(p):
                                 | qualified_name
                                 | function_call
                                 | date_time
-                                | case_specification
-                                | identifier"""
+                                | case_specification"""
     # FIXME : Remove identifier?
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
@@ -689,7 +697,16 @@ def p_base_primary_expression(p):
 
 
 def p_function_call(p):
-    r"""function_call : qualified_name LPAREN call_list RPAREN"""
+    r"""function_call : simple_function_call
+                      | qualified_name LPAREN ASTERISK RPAREN"""
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=False, arguments=[])
+
+
+def p_simple_function_call(p):
+    r"""simple_function_call : qualified_name LPAREN call_list RPAREN"""
     distinct = p[3] is None or p[3] == "DISTINCT"
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=distinct, arguments=p[3])
 

@@ -1,6 +1,13 @@
 from .node import Node
 
 
+class GroupBy(Node):
+    def __init__(self, line=None, pos=None, distinct=None, grouping_elements=None):
+        super(GroupBy, self).__init__(line, pos)
+        self.distinct = distinct
+        self.grouping_elements = grouping_elements
+
+
 class GroupingElement(Node):
     def __init__(self, line=None, pos=None):
         super(GroupingElement, self).__init__(line, pos)
