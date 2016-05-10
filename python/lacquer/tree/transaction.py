@@ -6,7 +6,7 @@ class TransactionMode(Node):
         super(TransactionMode, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_transaction_mode(self, context)
+        return visitor.visit_transaction_mode(self, context)
 
 
 class Isolation(TransactionMode):
@@ -15,7 +15,7 @@ class Isolation(TransactionMode):
         self.level = level
 
     def accept(self, visitor, context):
-        visitor.visit_isolation(self, context)
+        return visitor.visit_isolation(self, context)
 
     # def __str__(self):
     #     """
@@ -32,7 +32,7 @@ class TransactionAccessMode(TransactionMode):
         pass
 
     def accept(self, visitor, context):
-        visitor.visit_transaction_access_mode(self, context)
+        return visitor.visit_transaction_access_mode(self, context)
 
     # def __str__(self):
     #     """

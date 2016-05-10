@@ -10,11 +10,11 @@ class QuerySpecification(QueryBody):
         self.where = where
         self.group_by = group_by
         self.having = having
-        self.order_by = order_by
+        self.order_by = order_by or []
         self.limit = limit
 
     def accept(self, visitor, context):
-        visitor.visit_query_specification(self, context)
+        return visitor.visit_query_specification(self, context)
 
     # def __str__(self):
     #     """

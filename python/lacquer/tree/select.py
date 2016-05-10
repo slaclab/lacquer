@@ -8,7 +8,7 @@ class Select(Node):
         self.select_items = select_items
 
     def accept(self, visitor, context):
-        visitor.visit_select(self, context)
+        return visitor.visit_select(self, context)
 
     # def __str__(self):
     #     """

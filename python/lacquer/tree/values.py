@@ -7,7 +7,7 @@ class Values(QueryBody):
         self.rows = rows
 
     def accept(self, visitor, context):
-        visitor.visit_values(self, context)
+        return visitor.visit_values(self, context)
 
     def __str__(self):
         return "(" + ", ".join(self.rows or []) + ")"

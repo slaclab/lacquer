@@ -6,7 +6,7 @@ class SetOperation(QueryBody):
         super(SetOperation, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_set_operation(self, context)
+        return visitor.visit_set_operation(self, context)
 
     # TODO: use class names to deduplicate __str__ methods
 
@@ -22,7 +22,7 @@ class Except(SetOperation):
         self.distinct = distinct
 
     def accept(self, visitor, context):
-        visitor.visit_except(self, context)
+        return visitor.visit_except(self, context)
 
     def __str__(self):
         maybe_distinct = (" " + self.distinct) if self.distinct else ""
@@ -36,7 +36,7 @@ class Intersect(SetOperation):
         self.distinct = distinct
 
     def accept(self, visitor, context):
-        visitor.visit_intersect(self, context)
+        return visitor.visit_intersect(self, context)
 
     def __str__(self):
         maybe_distinct = (" " + self.distinct) if self.distinct else ""
@@ -50,7 +50,7 @@ class Union(SetOperation):
         self.distinct = distinct
 
     def accept(self, visitor, context):
-        visitor.visit_union(self, context)
+        return visitor.visit_union(self, context)
 
     def __str__(self):
         maybe_distinct = (" " + self.distinct) if self.distinct else ""

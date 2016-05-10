@@ -13,7 +13,7 @@ class AllColumns(SelectItem):
         self.prefix = prefix
 
     def accept(self, visitor, context):
-        visitor.visit_all_columns(self, context)
+        return visitor.visit_all_columns(self, context)
 
     def __str__(self):
         return "%s*" % (self.prefix + ".") if self.prefix else ""
@@ -26,7 +26,7 @@ class SingleColumn(SelectItem):
         self.expression = expression
 
     def accept(self, visitor, context):
-        visitor.visit_single_column(self, context)
+        return visitor.visit_single_column(self, context)
 
     def __str__(self):
         return str(self.expression) + (" " + self.alias) if self.alias else ""

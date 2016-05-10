@@ -6,7 +6,7 @@ class Expression(Node):
         super(Expression, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_expression(self, context)
+        return visitor.visit_expression(self, context)
 
     # def __str__(self):
     #     """
@@ -21,7 +21,7 @@ class Extract(Expression):
         self.field = field
 
     def accept(self, visitor, context):
-        visitor.visit_extract(self, context)
+        return visitor.visit_extract(self, context)
 
     
 class ArithmeticBinaryExpression(Expression):
@@ -32,7 +32,7 @@ class ArithmeticBinaryExpression(Expression):
         self.right = right
 
     def accept(self, visitor, context):
-        visitor.visit_arithmetic_binary_expression(self, context)
+        return visitor.visit_arithmetic_binary(self, context)
 
     
 class SubscriptExpression(Expression):
@@ -42,7 +42,7 @@ class SubscriptExpression(Expression):
         self.index = index
 
     def accept(self, visitor, context):
-        visitor.visit_subscript_expression(self, context)
+        return visitor.visit_subscript_expression(self, context)
 
 
 class IsNullPredicate(Expression):
@@ -51,7 +51,7 @@ class IsNullPredicate(Expression):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_is_null_predicate(self, context)
+        return visitor.visit_is_null_predicate(self, context)
 
     
 class IfExpression(Expression):
@@ -62,7 +62,7 @@ class IfExpression(Expression):
         self.false_value = false_value
 
     def accept(self, visitor, context):
-        visitor.visit_if_expression(self, context)
+        return visitor.visit_if_expression(self, context)
 
     
 class BetweenPredicate(Expression):
@@ -73,7 +73,7 @@ class BetweenPredicate(Expression):
         self.max = max
 
     def accept(self, visitor, context):
-        visitor.visit_between_predicate(self, context)
+        return visitor.visit_between_predicate(self, context)
 
     
 class InPredicate(Expression):
@@ -83,7 +83,7 @@ class InPredicate(Expression):
         self.value_list = value_list
 
     def accept(self, visitor, context):
-        visitor.visit_in_predicate(self, context)
+        return visitor.visit_in_predicate(self, context)
 
 
 class SimpleCaseExpression(Expression):
@@ -94,7 +94,7 @@ class SimpleCaseExpression(Expression):
         self.default_value = default_value
 
     def accept(self, visitor, context):
-        visitor.visit_simple_case_expression(self, context)
+        return visitor.visit_simple_case_expression(self, context)
 
     
 class ComparisonExpression(Expression):
@@ -105,7 +105,7 @@ class ComparisonExpression(Expression):
         self.right = right
 
     def accept(self, visitor, context):
-        visitor.visit_comparison_expression(self, context)
+        return visitor.visit_comparison_expression(self, context)
 
     
 class SearchedCaseExpression(Expression):
@@ -115,7 +115,7 @@ class SearchedCaseExpression(Expression):
         self.default_value = default_value
 
     def accept(self, visitor, context):
-        visitor.visit_searched_case_expression(self, context)
+        return visitor.visit_searched_case_expression(self, context)
 
     
 class LambdaExpression(Expression):
@@ -125,7 +125,7 @@ class LambdaExpression(Expression):
         self.body = body
 
     def accept(self, visitor, context):
-        visitor.visit_lambda_expression(self, context)
+        return visitor.visit_lambda_expression(self, context)
 
     
 class Cast(Expression):
@@ -139,7 +139,7 @@ class Cast(Expression):
     #     pass
 
     def accept(self, visitor, context):
-        visitor.visit_cast(self, context)
+        return visitor.visit_cast(self, context)
 
     
 class QualifiedNameReference(Expression):
@@ -148,7 +148,7 @@ class QualifiedNameReference(Expression):
         self.name = name
 
     def accept(self, visitor, context):
-        visitor.visit_qualified_name_reference(self, context)
+        return visitor.visit_qualified_name_reference(self, context)
 
     
 class FunctionCall(Expression):
@@ -160,7 +160,7 @@ class FunctionCall(Expression):
         self.arguments = arguments
 
     def accept(self, visitor, context):
-        visitor.visit_function_call(self, context)
+        return visitor.visit_function_call(self, context)
 
     
 class DereferenceExpression(Expression):
@@ -170,7 +170,7 @@ class DereferenceExpression(Expression):
         self.fieldName = field_name
 
     def accept(self, visitor, context):
-        visitor.visit_dereference_expression(self, context)
+        return visitor.visit_dereference_expression(self, context)
 
     # def try_parse_parts(self, base, field_name):
     #     pass
@@ -184,7 +184,7 @@ class LogicalBinaryExpression(Expression):
         self.right = right
 
     def accept(self, visitor, context):
-        visitor.visit_logical_binary_expression(self, context)
+        return visitor.visit_logical_binary_expression(self, context)
 
     # def and_op(self, left, right):
     #     return type == "AND"
@@ -199,7 +199,7 @@ class CoalesceExpression(Expression):
         self.operands = operands
 
     def accept(self, visitor, context):
-        visitor.visit_coalesce_expression(self, context)
+        return visitor.visit_coalesce_expression(self, context)
 
 
 class WhenClause(Expression):
@@ -209,7 +209,7 @@ class WhenClause(Expression):
         self.result = result
 
     def accept(self, visitor, context):
-        visitor.visit_when_clause(self, context)
+        return visitor.visit_when_clause(self, context)
 
 
 class Literal(Expression):
@@ -217,7 +217,7 @@ class Literal(Expression):
         super(Literal, self).__init__(line, pos)
 
     def accept(self, visitor, context):
-        visitor.visit_literal(self, context)
+        return visitor.visit_literal(self, context)
 
     
 class InputReference(Expression):
@@ -226,7 +226,7 @@ class InputReference(Expression):
         self.channel = channel
 
     def accept(self, visitor, context):
-        visitor.visit_input_reference(self, context)
+        return visitor.visit_input_reference(self, context)
 
     
 class LikePredicate(Expression):
@@ -237,7 +237,7 @@ class LikePredicate(Expression):
         self.escape = escape
 
     def accept(self, visitor, context):
-        visitor.visit_like_predicate(self, context)
+        return visitor.visit_like_predicate(self, context)
 
     
 class ExistsPredicate(Expression):
@@ -246,7 +246,7 @@ class ExistsPredicate(Expression):
         self.subquery = subquery
 
     def accept(self, visitor, context):
-        visitor.visit_exists_predicate(self, context)
+        return visitor.visit_exists_predicate(self, context)
 
     
 class NotExpression(Expression):
@@ -255,7 +255,7 @@ class NotExpression(Expression):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_not_expression(self, context)
+        return visitor.visit_not_expression(self, context)
 
     
 class InListExpression(Expression):
@@ -264,7 +264,7 @@ class InListExpression(Expression):
         self.values = values
 
     def accept(self, visitor, context):
-        visitor.visit_in_list_expression(self, context)
+        return visitor.visit_in_list_expression(self, context)
 
     
 class Row(Expression):
@@ -273,7 +273,7 @@ class Row(Expression):
         self.items = items
 
     def accept(self, visitor, context):
-        visitor.visit_row(self, context)
+        return visitor.visit_row(self, context)
 
 
 class SubqueryExpression(Expression):
@@ -282,7 +282,7 @@ class SubqueryExpression(Expression):
         self.query = query
 
     def accept(self, visitor, context):
-        visitor.visit_subquery_expression(self, context)
+        return visitor.visit_subquery_expression(self, context)
 
     
 class ArithmeticUnaryExpression(Expression):
@@ -298,7 +298,7 @@ class ArithmeticUnaryExpression(Expression):
     #     pass
 
     def accept(self, visitor, context):
-        visitor.visit_arithmetic_unary_expression(self, context)
+        return visitor.visit_arithmetic_unary(self, context)
 
     
 class NullIfExpression(Expression):
@@ -308,7 +308,7 @@ class NullIfExpression(Expression):
         self.second = second
 
     def accept(self, visitor, context):
-        visitor.visit_null_if_expression(self, context)
+        return visitor.visit_null_if_expression(self, context)
 
     
 class IsNotNullPredicate(Expression):
@@ -317,7 +317,7 @@ class IsNotNullPredicate(Expression):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_is_not_null_predicate(self, context)
+        return visitor.visit_is_not_null_predicate(self, context)
 
     
 class CurrentTime(Expression):
@@ -327,7 +327,7 @@ class CurrentTime(Expression):
         self.precision = precision
 
     def accept(self, visitor, context):
-        visitor.visit_current_time(self, context)
+        return visitor.visit_current_time(self, context)
 
 
 class ArrayConstructor(Expression):
@@ -339,4 +339,4 @@ class ArrayConstructor(Expression):
         self.values = values
 
     def accept(self, visitor, context):
-        visitor.visit_array_constructor(self, context)
+        return visitor.visit_array_constructor(self, context)

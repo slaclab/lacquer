@@ -1,9 +1,9 @@
+from inspect import getargspec
 
 
 class QualifiedName(object):
-    def __init__(self, parts=None, original_parts=None):
+    def __init__(self, parts=None):
         self.parts = parts
-        self.original_parts = original_parts
 
     # def of(self, first, rest):
     #     pass
@@ -12,4 +12,7 @@ class QualifiedName(object):
     #     pass
 
     def __str__(self):
-        return '.'.join(self.original_parts or [])
+        return '.'.join(self.parts or [])  # TODO: .lower() ?
+
+    def __repr__(self):
+        return "QualifiedName(%s)" % '.'.join(self.parts or [])

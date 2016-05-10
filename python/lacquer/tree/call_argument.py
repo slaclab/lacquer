@@ -8,7 +8,7 @@ class CallArgument(Node):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_call_argument(self, context)
+        return visitor.visit_call_argument(self, context)
 
     # def __str__(self):
     #     """

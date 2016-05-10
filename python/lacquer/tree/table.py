@@ -7,7 +7,7 @@ class Table(QueryBody):
         self.name = name
 
     def accept(self, visitor, context):
-        visitor.visit_table(self, context)
+        return visitor.visit_table(self, context)
 
     # def __str__(self):
     #     """
@@ -21,7 +21,7 @@ class TableSubquery(QueryBody):
         self.query = query
 
     def accept(self, visitor, context):
-        visitor.visit_table_subquery(self, context)
+        return visitor.visit_table_subquery(self, context)
 
     # def __str__(self):
     #     """

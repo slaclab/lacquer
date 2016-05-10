@@ -8,7 +8,7 @@ class TableElement(Node):
         self.typedef = typedef
 
     def accept(self, visitor, context):
-        visitor.visit_table_element(self, context)
+        return visitor.visit_table_element(self, context)
 
     def __str__(self):
         """

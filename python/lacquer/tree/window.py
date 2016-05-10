@@ -9,7 +9,7 @@ class Window(Node):
         self.frame = frame
 
     def accept(self, visitor, context):
-        visitor.visit_window(self, context)
+        return visitor.visit_window(self, context)
 
     # def __str__(self):
     #     """
@@ -28,7 +28,7 @@ class WindowFrame(Node):
         self.end = end
 
     def accept(self, visitor, context):
-        visitor.visit_window_frame(self, context)
+        return visitor.visit_window_frame(self, context)
 
     # def __str__(self):
     #     """
@@ -43,7 +43,7 @@ class FrameBound(Node):
         self.value = value
 
     def accept(self, visitor, context):
-        visitor.visit_frame_bound(self, context)
+        return visitor.visit_frame_bound(self, context)
 
     # def __str__(self):
     #     """
