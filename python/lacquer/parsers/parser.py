@@ -495,7 +495,7 @@ def p_search_condition(p):
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = LogicalBinaryExpression(p.lineno(1), p.lexpos(1), type="OR", left=p[1], right=p[2])
+        p[0] = LogicalBinaryExpression(p.lineno(1), p.lexpos(1), type="OR", left=p[1], right=p[3])
 
 
 def p_boolean_term(p):
