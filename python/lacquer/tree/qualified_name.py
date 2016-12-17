@@ -1,6 +1,3 @@
-from inspect import getargspec
-
-
 class QualifiedName(object):
     def __init__(self, parts=None):
         self.parts = parts
