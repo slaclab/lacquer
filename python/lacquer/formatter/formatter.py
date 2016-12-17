@@ -22,7 +22,7 @@ class Formatter(AstVisitor):
         return "%s AT TIME ZONE %s" % (self.process(node.value, context), self.process(node.time_zone, context))
 
     def visit_current_time(self, node, unmangle_names):
-        return "%s%s" % (node.type.namem, "(%s)" % node.precision if node.precision else "")
+        return "%s%s" % (node.type, "(%s)" % node.precision if node.precision else "")
 
     def visit_extract(self, node, unmangle_names):
         return "EXTRACT(%s FROM %s )" % (node.field, self.process(node.expression, unmangle_names))
@@ -81,7 +81,7 @@ class Formatter(AstVisitor):
 
     def visit_dereference_expression(self, node, unmangle_names):
         base_string = self.process(node.base, unmangle_names)
-        return base_string + "." + format_identifier(node.field_name)
+        return base_string + "." + _format_identifier(node.field_name)
 
     # def visit_input_reference(self, node, unmangle_names):
     #     # add colon so this won't parse
@@ -127,7 +127,7 @@ class Formatter(AstVisitor):
     def visit_is_not_null_predicate(self, node, unmangle_names):
         return "(" + self.process(node.value, unmangle_names) + " IS NOT NULL)"
 
-    def visit_None_if_expression(self, node, unmangle_names):
+    def visit_none_if_expression(self, node, unmangle_names):
         return "NULLIF(%s, %s)" % (self.process(node.first, unmangle_names), self.process(node.second, unmangle_names))
 
     def visit_if_expression(self, node, unmangle_names):
@@ -378,7 +378,8 @@ class SqlFormatter(AstVisitor):
     def visit_single_column(self, node, indent):
         self.builder.append(format_expression(node.expression))
         if node.alias:
-            self.builder.append(' "' + node.alias + '"')  # TODO: handle quoting properly
+            self.builder.append(' ')
+            self.builder.append(_format_identifier(node.alias))
         return None
 
     def visit_all_columns(self, node, context):
@@ -790,11 +791,9 @@ def format_expression(expression, unmangle_names=True):
 
 
 def sort_item_formatter(sort_item, unmangle_names):
-    builder = []
-    builder.append(format_expression(sort_item.sort_key, unmangle_names))
-    builder.append(" ASC" if sort_item.ordering == "ASC" else " DESC")
-
-    builder.append(" NULLS FIRST" if sort_item.null_ordering == "FIRST" else " NULLS LAST")
+    builder = [format_expression(sort_item.sort_key, unmangle_names),
+               " ASC" if sort_item.ordering == "ASC" else " DESC",
+               " NULLS FIRST" if sort_item.null_ordering == "FIRST" else " NULLS LAST"]
 
     if sort_item.null_ordering == "FIRST":
         builder.append(" NULLS FIRST")
@@ -804,13 +803,12 @@ def sort_item_formatter(sort_item, unmangle_names):
     return "".join(builder)
 
 
-def format_identifier(s):
-    # TODO: handle escaping properly
+def _format_identifier(s):
     return '"' + s + '"'
 
 
 def _format_qualified_name(name):
-    parts = [format_identifier(part) for part in name.parts]
+    parts = [_format_identifier(part) for part in name.parts]
     return '.'.join(parts)
 
 
