@@ -650,6 +650,7 @@ def p_parenthetic_primary_expression(p):
     p[0] = p[2]
 
 
+# Value Expression Primary in SQL-92 BNF
 def p_base_primary_expression(p):
     r"""base_primary_expression : NULL
                                 | number
@@ -661,14 +662,12 @@ def p_base_primary_expression(p):
                                 | function_call
                                 | date_time
                                 | case_specification
-                                | identifier"""
+                                | subquery"""
     # FIXME : Remove identifier?
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
         p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1][1:-1])  # FIXME: trim quotes?
-    elif p.slice[1].type == "identifier":
-        p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=QualifiedName([p[1]]))
     elif p.slice[1].type == "qualified_name":
         p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=p[1])
     else:
