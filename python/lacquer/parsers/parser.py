@@ -890,7 +890,25 @@ def p_empty(p):
 
 
 def p_error(p):
+    if p:
+        err = SyntaxError()
+        err.lineno = p.lineno
+        err.text = p.lexer.lexdata
+        err.msg = "Syntax error"
+
+        discarded_lines = '\n'.join(err.text.split("\n")[:err.lineno-1]) if (err.lineno - 1) else ""
+        err.offset = p.lexpos - len(discarded_lines)
+
+        def _print_error(self):
+            pointer = " " * err.offset + "^"
+            text = '\n'.join(err.text.split("\n")[:err.lineno])
+            print(text + "\n" + pointer)
+            return text + "\n" + pointer
+
+        err.print_file_and_line = _print_error
+        raise err
     print(p)
+    raise SyntaxError("Syntax error in input!")
     print("Syntax error in input!")
 
 
