@@ -21,6 +21,7 @@ tokens = ['INTEGER',               'DECIMAL', 'NUMBER',
           'ASTERISK',              'PERCENT',
           'TOP',  # ADQL
           'NON_RESERVED',
+          'COMMENT',
           ] + reserved + list(presto_nonreserved)
 
 # _exponent = r'[eE][+-]?\d+'
@@ -558,25 +559,21 @@ def p_between_predicate(p):
 
 def p_in_predicate(p):
     r"""in_predicate : value_expression not_opt IN in_value"""
-    p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=p[4])
+    if p.slice[5].type == "in_expressions":
+        value_list = InListExpression(p.lineno(4), p.lexpos(4), values=p[5])
+    p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=value_list)
     _check_not(p)
 
 
 def p_in_value(p):
-    r"""in_value : LPAREN in_expressions RPAREN
-                 | table_subquery"""
+    r"""in_value : LPAREN in_expressions RPAREN"""
     if p.slice[1].type == "expressions":
         p[0] = InListExpression(p.lineno(1), p.lexpos(1), values=p[1])
 
 
-def p_table_subquery(p):
-    r"""table_subquery : subquery"""
-    p[0] = p[1]
-
-
 def p_in_expressions(p):
-    r"""in_expressions : in_expressions COMMA expression
-                       | expression"""
+    r"""in_expressions : value_expression
+                       | in_expressions COMMA value_expression"""
     _item_list(p)
 
 
@@ -601,7 +598,7 @@ def p_null_predicate(p):
 
 
 def p_exists_predicate(p):
-    r"""exists_predicate : EXISTS table_subquery"""
+    r"""exists_predicate : EXISTS subquery"""
     p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[2])
 
 
@@ -840,7 +837,7 @@ def p_type(p):
 def p_integer_param_opt(p):
     """integer_param_opt : LPAREN INTEGER RPAREN
                          | empty"""
-    p[0] = integer_types[-1](p[2]) if p[1] else None
+    p[0] = newint(p[2]) if p[1] else None
 
 
 def p_base_type(p):
