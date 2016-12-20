@@ -470,7 +470,7 @@ def p_aliased_relation(p):
 
 
 def p_derived_table(p):
-    r"""derived_table : table_subquery alias"""
+    r"""derived_table : subquery alias"""
     p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[1], alias=p[2])
 
 
