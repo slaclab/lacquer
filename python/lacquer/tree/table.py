@@ -9,10 +9,8 @@ class Table(QueryBody):
     def accept(self, visitor, context):
         return visitor.visit_table(self, context)
 
-    # def __str__(self):
-    #     """
-    #     return MoreObjects.toStringHelper(this).addValue(name).toString();
-    #     """
+    def __str__(self):
+        return str(self.name)
 
 
 class TableSubquery(QueryBody):
