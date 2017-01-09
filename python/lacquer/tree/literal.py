@@ -1,5 +1,5 @@
 from .node import Node
-from future.types import newint
+from builtins import int
 
 
 class Literal(Node):
@@ -82,7 +82,7 @@ class TimeLiteral(Literal):
 class LongLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
         super(LongLiteral, self).__init__(line, pos)
-        self.value = newint(value)
+        self.value = int(value)
 
     def accept(self, visitor, context):
         return visitor.visit_long_literal(self, context)
