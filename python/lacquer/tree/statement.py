@@ -29,7 +29,7 @@ class Query(Statement):
         super(Query, self).__init__(line, pos)
         self.with_ = with_
         self.query_body = query_body
-        self.order_by = order_by
+        self.order_by = order_by or []
         self.limit = limit
         # self.approximate = approximate
 
