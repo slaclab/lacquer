@@ -2,9 +2,6 @@ from .join_criteria import JoinOn
 
 
 class AstVisitor(object):
-    def __init__(self, line=None, pos=None):
-        self.line = line
-        self.pos = pos
 
     def process(self, node, context):
         return node.accept(self, context)
@@ -323,8 +320,6 @@ class AstVisitor(object):
 
 
 class DefaultTraversalVisitor(AstVisitor):
-    def __init__(self, line=None, pos=None):
-        super(DefaultTraversalVisitor, self).__init__(line, pos)
 
     def visit_extract(self, node, context):
         return self.process(node.expression, context)
