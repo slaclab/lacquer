@@ -150,7 +150,7 @@ class QualifiedNameReference(Expression):
     def accept(self, visitor, context):
         return visitor.visit_qualified_name_reference(self, context)
 
-    
+
 class FunctionCall(Expression):
     def __init__(self, line=None, pos=None, name=None, window=None, distinct=None, arguments=None):
         super(FunctionCall, self).__init__(line, pos)
