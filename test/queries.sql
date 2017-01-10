@@ -1,6 +1,6 @@
-select 1 from foo where bar in (select 1 from baz);
+--select 1 from foo where bar in (select 1 from baz);
 
-select 1 from foo where bar in ((select 1 from baz));
+--select 1 from foo where bar in ((select 1 from baz));
 
 select 1 from foo where bar in (2);
 
@@ -36,6 +36,11 @@ select 1 from foo as a;
 select a.bar from foo a;
 select 1 from foo a where a.bar = 3 or z.bax = 4;
 select `foo`;
+
+select a, b from foo order by a;
+select a, b from foo order by a, b;
+select a, b from foo where 1=1 order by a, b;
+select foo.a as foo_a, bar.b as bar_b, c from foo, y bar order by foo_a, bar_b;
 
 select TOP 10 case when x=1 then y else z END, a
 from "II/295/SSTGC","II/293/glimpse"

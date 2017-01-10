@@ -175,7 +175,7 @@ def p_sort_items(p):
 
 
 def p_sort_item(p):
-    r"""sort_item : expression order_opt null_ordering_opt"""
+    r"""sort_item : value_expression order_opt null_ordering_opt"""
     p[0] = SortItem(p.lineno(1), p.lexpos(1),
                     sort_key=p[1], ordering=p[2] or 'ASC', null_ordering=p[3])
 
