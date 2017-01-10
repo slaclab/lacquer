@@ -608,12 +608,10 @@ def p_value_expression(p):
     r"""value_expression : value_expression PLUS term
                          | value_expression MINUS term
                          | term"""
-    if p.slice[1].type in ("term", "string_value_expression"):
-        p[0] = p[1]
-    elif p.slice[1].type == "value_expression":
+    if p.slice[1].type == "value_expression":
         p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
     else:
-        raise SyntaxError("There's a problem with the value_expression rule")
+        p[0] = p[1]
 
 
 def p_term(p):
@@ -651,21 +649,27 @@ def p_parenthetic_primary_expression(p):
 
 # Value Expression Primary in SQL-92 BNF
 def p_base_primary_expression(p):
-    r"""base_primary_expression : NULL
-                                | number
-                                | boolean_value
-                                | STRING
+    r"""base_primary_expression : value
                                 | qualified_name
+                                | subquery
                                 | function_call
                                 | date_time
-                                | case_specification
-                                | subquery"""
+                                | case_specification"""
+    if p.slice[1].type == "qualified_name":
+        p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=p[1])
+    else:
+        p[0] = p[1]
+
+
+def p_value(p):
+    r"""value : NULL
+              | STRING
+              | number
+              | boolean_value"""
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
         p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1][1:-1])  # FIXME: trim quotes?
-    elif p.slice[1].type == "qualified_name":
-        p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=p[1])
     else:
         p[0] = p[1]
 
@@ -785,7 +789,7 @@ def p_type(p):
 def p_integer_param_opt(p):
     """integer_param_opt : LPAREN INTEGER RPAREN
                          | empty"""
-    p[0] = newint(p[2]) if p[1] else None
+    p[0] = int(p[2]) if p[1] else None
 
 
 def p_base_type(p):
