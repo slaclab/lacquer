@@ -27,44 +27,47 @@ class TestQueries(unittest.TestCase):
     def test_parse_queries(self):
         err = 0
         for query in self.queries:
+            if query[:2] == "--":
+                continue
             try:
-                tree = parser.parse(query, tracking=True)
+                parser.parse(query, tracking=True)
             except SyntaxError as e:
                 print("Error parsing query:")
                 e.print_file_and_line(e)
                 err +=1
+        if err:
+            self.fail("Encountered %d errors" % err)
 
     def test_format_queries(self):
         err = 0
         for query in self.queries:
+            if query[:2] == "--":
+                continue
+            tree = parser.parse(query, tracking=True)
             try:
-                tree = parser.parse(query, tracking=True)
-                try:
-                    format_sql(tree)
-                except Exception as e:
-                    import time
-                    import traceback
-                    print("\n\n")
-                    print(query)
-                    print("failed to format:\n" + str(tree))
-                    print(e)
-                    traceback.print_tb(e.__traceback__)
-                    #time.sleep(1)
-                    print("\n\n")
-            except SyntaxError as e:
-                #print("Error parsing query <skipped>")
-                err +=1
+                format_sql(tree, None)
+            except Exception as e:
+                err += 1
+                print("\n\n")
+                print(query)
+                print("failed to format:\n" + str(tree))
+                print(e)
+                print("\n\n")
+        if err:
+            self.fail("Encountered %d errors" % err)
 
     def test_format_json(self):
         err = 0
         for query in self.queries:
+            if query[:2] == "--":
+                continue
             try:
-                print(query)
                 tree = parser.parse(query, tracking=True)
-                print(NodeEncoder(indent=4).encode(tree))
+                NodeEncoder(indent=4).encode(tree)
             except SyntaxError as e:
-                err +=1
-
+                err += 1
+        if err:
+            self.fail("Encountered %d errors" % err)
 
 
 if __name__ == '__main__':
