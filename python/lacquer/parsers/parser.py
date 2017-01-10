@@ -670,7 +670,6 @@ def p_base_primary_expression(p):
         p[0] = p[1]
 
 
-
 def p_function_call(p):
     r"""function_call : qualified_name LPAREN call_list RPAREN"""
     distinct = p[3] is None or p[3] == "DISTINCT"
@@ -720,6 +719,7 @@ def p_call_list(p):
     r"""call_list : call_list COMMA value_expression
                   | value_expression"""
     _item_list(p)
+
 
 def p_date_time(p):
     r"""date_time : CURRENT_DATE
