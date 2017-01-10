@@ -310,7 +310,7 @@ class SqlFormatter(AstVisitor):
             self.builder.append('\n')
 
         if node.limit:
-            self._append(indent, "LIMIT " + node.limit)
+            self._append(indent, "LIMIT " + str(node.limit))
             self.builder.append('\n')
 
         # if node.approximate:
