@@ -377,31 +377,33 @@ def p_relations(p):
     _item_list(p)
 
 
+# query expression
 def p_table_reference(p):
     r"""table_reference : table_primary
-                        | join_relation"""
+                        | joined_table"""
     p[0] = p[1]
 
 
+# table reference
 def p_table_primary(p):
     r"""table_primary : aliased_relation
                       | derived_table
-                      | LPAREN join_relation RPAREN"""
+                      | LPAREN joined_table RPAREN"""
     p[0] = p[1]
 
 
 # joined table
-def p_join_relation(p):
-    r"""join_relation : cross_join
-                      | qualified_join
-                      | natural_join"""
+def p_joined_table(p):
+    r"""joined_table : cross_join
+                     | qualified_join
+                     | natural_join"""
     p[0] = p[1]
 
 
 def p_cross_join(p):
-    r"""cross_join : table_reference CROSS JOIN aliased_relation"""
+    r"""cross_join : table_reference CROSS JOIN table_primary"""
     p[0] = Join(p.lineno(1), p.lexpos(1), join_type="CROSS",
-                left=p[1], right=p[3], criteria=None)
+                left=p[1], right=p[4], criteria=None)
 
 
 def p_qualified_join(p):
@@ -414,7 +416,7 @@ def p_qualified_join(p):
 
 
 def p_natural_join(p):
-    r"""natural_join : table_reference NATURAL join_type JOIN aliased_relation"""
+    r"""natural_join : table_reference NATURAL join_type JOIN table_primary"""
     right = p[5]
     criteria = NaturalJoin()
     join_type = "INNER"
@@ -455,12 +457,12 @@ def p_identifiers(p):
 # Potentially Aliased table_reference
 def p_aliased_relation(p):
     r"""aliased_relation : qualified_name alias_opt"""
-    table = Table(p.lineno(1), p.lexpos(1), name=p[1])
+    rel = Table(p.lineno(1), p.lexpos(1), name=p[1])
     if p[2]:
         p[0] = AliasedRelation(p.lineno(1), p.lexpos(1),
-                               relation=table, alias=p[2])  # , column_names=column_names)
+                               relation=rel, alias=p[2])  # , column_names=column_names)
     else:
-        p[0] = table
+        p[0] = rel
 
 
 # Notes: 'AS' in as_opt not supported on most databases
@@ -470,8 +472,11 @@ def p_aliased_relation(p):
 
 
 def p_derived_table(p):
-    r"""derived_table : subquery alias"""
-    p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[1], alias=p[2])
+    r"""derived_table : subquery alias_opt"""
+    if p[2]:
+        p[0] = AliasedRelation(p.lineno(1), p.lexpos(1), relation=p[1], alias=p[2])
+    else:
+        p[0] = p[1]
 
 
 def p_alias_opt(p):
@@ -559,16 +564,13 @@ def p_between_predicate(p):
 
 def p_in_predicate(p):
     r"""in_predicate : value_expression not_opt IN in_value"""
-    if p.slice[5].type == "in_expressions":
-        value_list = InListExpression(p.lineno(4), p.lexpos(4), values=p[5])
-    p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=value_list)
+    p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=p[4])
     _check_not(p)
 
 
 def p_in_value(p):
     r"""in_value : LPAREN in_expressions RPAREN"""
-    if p.slice[1].type == "expressions":
-        p[0] = InListExpression(p.lineno(1), p.lexpos(1), values=p[1])
+    p[0] = InListExpression(p.lineno(1), p.lexpos(1), values=p[2])
 
 
 def p_in_expressions(p):
@@ -653,14 +655,11 @@ def p_base_primary_expression(p):
                                 | number
                                 | boolean_value
                                 | STRING
-                                | interval
-                                | identifier STRING
                                 | qualified_name
                                 | function_call
                                 | date_time
                                 | case_specification
                                 | subquery"""
-    # FIXME : Remove identifier?
     if p.slice[1].type == "NULL":
         p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
     elif p.slice[1].type == "STRING":
@@ -670,18 +669,6 @@ def p_base_primary_expression(p):
     else:
         p[0] = p[1]
 
-
-# Leftover from presto:
-#     | qualified_name LPAREN ASTERISK RPAREN                #functionCall
-#     |      #functionCall
-#     | LPAREN query RPAREN                                  #subqueryExpression
-#     | CAST RPAREN expression AS type LPAREN                #cast
-#     | '(' expression (',' expression)+ ')'                 #rowConstructor
-#     | ROW LPAREN expressions RPAREN                        #rowConstructor
-#     | identifier                                           #columnReference
-#     | primary_expression . identifier                      #dereference
-#     | LPAREN expression RPAREN                                             #parenthesizedExpression"""
-#     | SUBSTRING LPAREN value_expression FROM value_expression (FOR value_expression)? RPAREN  #substring
 
 
 def p_function_call(p):
@@ -734,18 +721,6 @@ def p_call_list(p):
                   | value_expression"""
     _item_list(p)
 
-
-def p_general_literal(p):
-    r"""general_literal : STRING
-                        | interval"""
-    if p.slice[1].type == "NULL":
-        p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
-    elif p.slice[1].type == "STRING":
-        p[0] = StringLiteral(p.lineno(1), p.lexpos(1), p[1].value)
-    else:
-        p[0] = p[1]
-
-
 def p_date_time(p):
     r"""date_time : CURRENT_DATE
                   | CURRENT_TIME      integer_param_opt
@@ -754,11 +729,6 @@ def p_date_time(p):
                   | LOCALTIMESTAMP    integer_param_opt"""
     precision = p[2] if len(p) == 3 else None
     p[0] = CurrentTime(p.lineno(1), p.lexpos(1), type=p[1], precision=p[2])
-
-
-def p_timezone_specifier(p):
-    r"""timezone_specifier : TIME ZONE interval
-                           | TIME ZONE STRING"""
 
 
 def p_comparison_operator(p):
@@ -788,28 +758,6 @@ def p_boolean_value(p):
     r"""boolean_value : TRUE
                       | FALSE"""
     p[0] = BooleanLiteral(p.lineno(1), p.lexpos(1), value=p[1])
-
-
-def p_interval(p):
-    r"""interval : INTERVAL sign_opt STRING interval_field interval_end_opt"""
-    sign = p[2] or "+"
-    p[0] = IntervalLiteral(p.lineno(1), p.lexpos(1), value=p[3], sign=p[2], start_field=p[4], end_field=p[5])
-
-
-def p_interval_end_opt(p):
-    r"""interval_end_opt : TO interval_field
-                         | empty"""
-    p[0] = p[2] if p[1] else None
-
-
-def p_interval_field(p):
-    r"""interval_field : YEAR
-                       | MONTH
-                       | DAY
-                       | HOUR
-                       | MINUTE
-                       | SECOND"""
-    p[0] = p[1]
 
 
 def p_sign_opt(p):
@@ -903,9 +851,6 @@ def p_error(p):
 
         err.print_file_and_line = _print_error
         raise err
-    print(p)
     raise SyntaxError("Syntax error in input!")
-    print("Syntax error in input!")
-
 
 parser = yacc.yacc()
