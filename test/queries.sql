@@ -39,8 +39,33 @@ select `foo`;
 
 select a, b from foo order by a;
 select a, b from foo order by a, b;
+select fun(a), b from foo order by fun(a), b;
 select a, b from foo where 1=1 order by a, b;
 select foo.a as foo_a, bar.b as bar_b, c from foo, y bar order by foo_a, bar_b;
+
+select foo, bar from baz group by foo order by baz;
+
+select
+	l_returnflag,
+	l_linestatus,
+	sum(l_quantity) as sum_qty,
+	sum(l_extendedprice) as sum_base_price,
+	sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+	sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+	avg(l_quantity) as avg_qty,
+	avg(l_extendedprice) as avg_price,
+	avg(l_discount) as avg_disc
+from
+	lineitem
+where
+	l_shipdate <= 1234
+group by
+	l_returnflag,
+	l_linestatus
+order by
+	l_returnflag,
+	l_linestatus;
+
 
 select TOP 10 case when x=1 then y else z END, a
 from "II/295/SSTGC","II/293/glimpse"
