@@ -291,11 +291,13 @@ class ArithmeticUnaryExpression(Expression):
         self.value = value
         self.sign = sign
 
-    # def positive(self, value, location=None):
-    #     pass
-    #
-    # def negative(self, value, location=None):
-    #     pass
+    @staticmethod
+    def negative(value):
+        return ArithmeticUnaryExpression(value=value, sign="-")
+
+    @staticmethod
+    def positive(value):
+        return ArithmeticUnaryExpression(value=value, sign="+")
 
     def accept(self, visitor, context):
         return visitor.visit_arithmetic_unary(self, context)
