@@ -617,8 +617,8 @@ def p_else_clause(p):
 
 
 def p_call_list(p):
-    r"""call_list : call_list COMMA value_expression
-                  | value_expression"""
+    r"""call_list : call_list COMMA expression
+                  | expression"""
     _item_list(p)
 
 
