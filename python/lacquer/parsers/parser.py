@@ -115,23 +115,12 @@ lex.lex()
 
 
 def p_statement(p):
-    r"""statement : query"""
+    r"""statement : cursor_specification"""
     p[0] = p[1]
 
 
-def p_subquery(p):
-    r"""subquery : LPAREN query RPAREN"""
-    p[0] = SubqueryExpression(p.lineno(1), p.lexpos(1), query=p[2])
-
-
-def p_query(p):
-    r"""query : query_no_with"""
-    p[0] = p[1]
-
-
-# FIXME: query expression body or non-join query primary?
-def p_query_no_with(p):
-    r"""query_no_with : query_term order_by_opt limit_opt"""
+def p_cursor_specification(p):
+    r"""cursor_specification : query_expression order_by_opt limit_opt"""
     if isinstance(p[1], QuerySpecification):
         # When we have a simple query specification
         # followed by order by limit, fold the order by and limit
@@ -159,6 +148,22 @@ def p_query_no_with(p):
     else:
         p[0] = Query(p.lineno(1), p.lexpos(1),
                      with_=None, query_body=p[1], order_by=p[2], limit=p[3])
+
+
+def p_subquery(p):
+    r"""subquery : LPAREN query_expression RPAREN"""
+    p[0] = SubqueryExpression(p.lineno(1), p.lexpos(1), query=p[2])
+
+
+def p_query_expression(p):
+    r"""query_expression : query_expression_body"""
+    p[0] = p[1]
+
+
+def p_query_expression_body(p):
+    r"""query_expression_body : nonjoin_query_expression
+                              | joined_table"""
+    p[0] = p[1]
 
 
 # ORDER BY
@@ -204,10 +209,8 @@ def p_limit_opt(p):
 
 # non-join query expression
 # QUERY TERM
-def p_query_term(p):
-    r"""query_term : query_term_intersect
-                   | query_term UNION set_quantifier_opt query_term_intersect
-                   | query_term EXCEPT set_quantifier_opt query_term_intersect"""
+def p_nonjoin_query_expression(p):
+    r"""nonjoin_query_expression : nonjoin_query_term"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -221,9 +224,8 @@ def p_query_term(p):
 
 
 # non-join query term
-def p_query_term_intersect(p):
-    r"""query_term_intersect : nonjoin_query_primary
-                             | query_term_intersect INTERSECT set_quantifier_opt nonjoin_query_primary"""
+def p_nonjoin_query_term(p):
+    r"""nonjoin_query_term : nonjoin_query_primary"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -234,7 +236,7 @@ def p_query_term_intersect(p):
 # non-join query primary
 def p_nonjoin_query_primary(p):
     r"""nonjoin_query_primary : simple_table
-                              | LPAREN query_term RPAREN"""
+                              | LPAREN nonjoin_query_expression RPAREN"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -316,14 +318,14 @@ def p_where_opt(p):
 
 
 def p_group_by_opt(p):
-    r"""group_by_opt : GROUP BY grouping_elements
+    r"""group_by_opt : GROUP BY grouping_expressions
                      | empty"""
-    p[0] = p[3] if p[1] else None
+    p[0] = SimpleGroupBy(p.lineno(1), p.lexpos(1), columns=p[3]) if p[1] else None
 
 
-def p_grouping_elements(p):
-    r"""grouping_elements : qualified_name
-                          | grouping_elements COMMA qualified_name"""
+def p_grouping_expressions(p):
+    r"""grouping_expressions : value_expression
+                             | grouping_expressions COMMA value_expression"""
     _item_list(p)
 
 
@@ -387,8 +389,7 @@ def p_table_reference(p):
 # table reference
 def p_table_primary(p):
     r"""table_primary : aliased_relation
-                      | derived_table
-                      | LPAREN joined_table RPAREN"""
+                      | derived_table"""
     p[0] = p[1]
 
 
@@ -528,14 +529,8 @@ def p_boolean_test(p):
 
 
 def p_boolean_primary(p):
-    r"""boolean_primary : predicate
-                        | parenthetic_expression"""
+    r"""boolean_primary : predicate"""
     p[0] = p[1] if len(p) == 2 else p[2]
-
-
-def p_parenthetic_expression(p):
-    r"""parenthetic_expression : RPAREN expression RPAREN"""
-    p[0] = p[1]
 
 
 def p_predicate(p):
@@ -605,10 +600,15 @@ def p_exists_predicate(p):
 
 
 def p_value_expression(p):
-    r"""value_expression : value_expression PLUS term
-                         | value_expression MINUS term
-                         | term"""
-    if p.slice[1].type == "value_expression":
+    r"""value_expression : numeric_value_expression"""
+    p[0] = p[1]
+
+
+def p_numeric_value_expression(p):
+    r"""numeric_value_expression : numeric_value_expression PLUS term
+                                 | numeric_value_expression MINUS term
+                                 | term"""
+    if p.slice[1].type == "numeric_value_expression":
         p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
     else:
         p[0] = p[1]
@@ -643,7 +643,7 @@ def p_primary_expression(p):
 
 
 def p_parenthetic_primary_expression(p):
-    r"""parenthetic_primary_expression : LPAREN base_primary_expression RPAREN"""
+    r"""parenthetic_primary_expression : LPAREN value_expression RPAREN"""
     p[0] = p[2]
 
 
@@ -776,25 +776,10 @@ def p_sign(p):
     p[0] = p[1]
 
 
-def p_table_element(p):
-    """table_element : IDENTIFIER type"""
-    p[0] = TableElement(p.lineno(1), p.lexpos(1), name=p[1], typedef=p[2])
-
-
-def p_type(p):
-    """type : base_type integer_param_opt"""
-    p[0] = "%s%s" % (p[1], ("(%d)" % p[2]) if p[2] else '')
-
-
 def p_integer_param_opt(p):
     """integer_param_opt : LPAREN INTEGER RPAREN
                          | empty"""
     p[0] = int(p[2]) if p[1] else None
-
-
-def p_base_type(p):
-    """base_type : IDENTIFIER"""
-    p[0] = p[1]
 
 
 def p_qualified_name(p):
