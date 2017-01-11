@@ -336,9 +336,7 @@ class SqlFormatter(AstVisitor):
             self.builder.append('\n')
 
         if node.group_by:
-            self._append(indent, "GROUP BY " +
-                         (" DISTINCT " if node.group_by.distinct else "") +
-                         format_group_by(node.group_by.grouping_elements))
+            self._append(indent, "GROUP BY " + format_group_by(node.group_by))
             self.builder.append('\n')
 
         if node.having:
@@ -812,27 +810,14 @@ def _format_qualified_name(name):
     return '.'.join(parts)
 
 
-def format_group_by(grouping_elements):
+def format_group_by(grouping_element):
     result_strings = []
 
-    for grouping_element in grouping_elements:
-        result = ""
-        if isinstance(grouping_element, SimpleGroupBy):
-            columns = grouping_element.columns
-            if len(columns) == 1:
-                result = format_expression(columns[0])
-            else:
-                raise NotImplementedError("Grouping Sets not Implemented")
-                # result = format_grouping_set(columns)
-        # elif isintance(grouping_element, GroupingSets):
-        #     raise NotImplementedError("Grouping Sets not Implemented")
-        #     # formatted_gs = [format_grouping_set(gs) for gs in grouping_element.grouping_sets]
-        #     # result = format("GROUPING SETS (%s)", ", ".join(formatted_gs)
-        # elif isinstance(grouping_element, Cube):
-        #     # result = format("CUBE %s", format_grouping_set(grouping_element.columns))
-        # elif isinstance(grouping_element, Rollup):
-        #     # result = format("ROLLUP %s", format_grouping_set(grouping_element.columns))
-        result_strings.append(result)
+    result = ""
+    if isinstance(grouping_element, SimpleGroupBy):
+        columns = grouping_element.columns
+        for column in columns:
+            result_strings.append(format_expression(column))
     return ", ".join(result_strings)
 
 
