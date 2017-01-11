@@ -54,7 +54,7 @@ t_ignore = ' \t'
 
 
 def t_INTEGER(t):
-    r'[-]?\d+'
+    r'\d+'
     t.type = "INTEGER"
     return t
 
