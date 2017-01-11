@@ -412,7 +412,7 @@ def p_boolean_term(p):
 
 def p_boolean_factor(p):
     r"""boolean_factor : not_opt boolean_test"""
-    if p[1] == "not_opt":
+    if p[1]:
         p[0] = NotExpression(p.lineno(1), p.lexpos(1), value=p[2])
     else:
         p[0] = p[2]
