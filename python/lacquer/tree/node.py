@@ -21,6 +21,15 @@ class Node(object):
         args = ", ".join(["=".join((arg, repr(getattr(self, arg)))) for arg in argspec])
         return "{name}({args})".format(name=clz.__name__, args=args)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            keys = [key for key in self.__dict__.keys() if key not in ("line", "pos")]
+            for key in keys:
+                if getattr(self, key) != getattr(other, key):
+                    return False
+            return True
+        return False
+
 # class NodeLocation:
 #    def __init__(self, line=None, pos=None, line=None, char_position_in_line=None):
 #        self.line = line

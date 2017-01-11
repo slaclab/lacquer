@@ -13,3 +13,8 @@ class QualifiedName(object):
 
     def __repr__(self):
         return "QualifiedName(%s)" % '.'.join(self.parts or [])
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.parts == other.parts
+        return False
