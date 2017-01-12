@@ -2,7 +2,7 @@ from .node import Node
 
 
 class Select(Node):
-    def __init__(self, line=None, pos=None, distinct=None, select_items=None):
+    def __init__(self, line=None, pos=None, distinct=False, select_items=None):
         super(Select, self).__init__(line, pos)
         self.distinct = distinct
         self.select_items = select_items
