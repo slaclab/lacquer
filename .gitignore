@@ -14,5 +14,5 @@ doc/html
 doc/xml
 doc/*.tag
 python/lsst/__init__.pyc
-python/lacquer/parsers/parser.out
+lacquer/parsers/parser.out
 .idea
