@@ -2,11 +2,15 @@ class QualifiedName(object):
     def __init__(self, parts=None):
         self.parts = parts
 
-    # def of(self, first, rest):
-    #     pass
-    #
-    # def has_suffix(self, suffix):
-    #     pass
+    @staticmethod
+    def of(*parts):
+        """
+        Convenience method for constructiong QualfiedNames.
+        :param parts: If len(parts) == 1, will split on the periods for you
+        """
+        if len(parts) == 1 and "." in parts:
+            parts = parts[0].split(".")
+        return QualifiedName(parts=[part for part in parts])
 
     def __str__(self):
         return '.'.join(self.parts or [])  # TODO: .lower() ?
