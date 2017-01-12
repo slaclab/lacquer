@@ -26,7 +26,7 @@ def p_cursor_specification(p):
         query = p[1]
         limit = p[3]
 
-        # Support ADQL TOP
+        # Support Alternative TOP syntax
         if hasattr(query, 'limit'):
             limit = query.limit
         p[0] = Query(p.lineno(1), p.lexpos(1), with_=None,
@@ -176,7 +176,7 @@ def _item_list(p):
 
 
 def p_query_specification(p):
-    r"""query_specification : SELECT set_quantifier_opt adql_top_opt select_items table_expression_opt"""
+    r"""query_specification : SELECT set_quantifier_opt alt_limit_opt select_items table_expression_opt"""
     distinct = p[2] == "DISTINCT"
     select_items = p[4]
     table_expression_opt = p[5]
@@ -199,13 +199,13 @@ def p_query_specification(p):
                               where=where,
                               group_by=group_by,
                               having=having)
-    # ADQL TOP Support
+    # Alt-limit (TOP) Support
     if p[3]:
         p[0].limit = p[3]
 
 
-def p_adql_top_opt(p):
-    r"""adql_top_opt : TOP INTEGER
+def p_alt_limit_opt(p):
+    r"""alt_limit_opt : TOP INTEGER
                      | empty"""
     p[0] = int(p[2]) if p[1] else None
 
