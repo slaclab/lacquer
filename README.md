@@ -1,4 +1,4 @@
-# lacquer
+# lacquer [![Build Status](https://travis-ci.org/slaclab/lacquer.svg?branch=master)](https://travis-ci.org/slaclab/lacquer)
 
 lacquer is a python port of Presto's SQL Parser.
 
