@@ -464,8 +464,12 @@ def p_in_predicate(p):
 
 
 def p_in_value(p):
-    r"""in_value : LPAREN in_expressions RPAREN"""
-    p[0] = InListExpression(p.lineno(1), p.lexpos(1), values=p[2])
+    r"""in_value : LPAREN in_expressions RPAREN
+                 | subquery"""
+    if p.slice[1].type == "subquery":
+        p[0] = p[1]
+    else:
+        p[0] = InListExpression(p.lineno(1), p.lexpos(1), values=p[2])
 
 
 def p_in_expressions(p):
