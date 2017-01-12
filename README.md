@@ -7,9 +7,12 @@ but it can parse most SELECT queries and produce the python-equivalent
 syntax tree, as well as write the tree back out to SQL.
 
 It was written for [LSST](http://lsst.org) to support the Astronomical 
-Data Query Language, "lacquer" which is roughly equivalent to SQL-92.
+Data Query Language, which is roughly equivalent to SQL-92.
 
-  
+## Advantages
+* Only two dependencies, PLY and future. Runs on Python 2 and 3 (tested on 2.7 and 3.5).
+* Uses the Presto AST IR and Visitor patterns
+  * Code can easily be ported to lacquer from Python
 
 ## Known issues
 In the porting, the grammar was ported from LL (ANTLRv4) to LALR (PLY).
