@@ -277,7 +277,7 @@ class SqlFormatter(AstVisitor):
         raise NotImplementedError("not yet implemented: " + node)
 
     def visit_expression(self, node, indent):
-        if indent == 0:
+        if indent != 0:
             raise ValueError("visit_expression should only be called at root")
         self.builder.append(format_expression(node, self._unmangle_names))
         return None
