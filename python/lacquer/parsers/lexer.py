@@ -23,7 +23,7 @@ tokens = ['INTEGER',               'DECIMAL', 'NUMBER',
 
 
 def t_NUMBER(t):
-    r"""\d+(?:\.\d*)?(?:[eE][+-]\d+)?"""
+    r"""(\d+(?:\.\d*)?(?:[eE][+-]?\d+)?|\d*(?:\.\d+)(?:[eE][+-]?\d+)?)"""
     if 'e' in t.value or 'E' in t.value or '.' in t.value:
         t.type = 'DECIMAL'
     else:
