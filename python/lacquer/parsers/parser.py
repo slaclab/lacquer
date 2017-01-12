@@ -106,12 +106,14 @@ def p_limit_opt(p):
 # non-join query expression
 # QUERY TERM
 def p_nonjoin_query_expression(p):
-    r"""nonjoin_query_expression : nonjoin_query_term"""
+    r"""nonjoin_query_expression : nonjoin_query_term
+                                 | nonjoin_query_expression UNION set_quantifier_opt nonjoin_query_term
+                                 | nonjoin_query_expression EXCEPT set_quantifier_opt nonjoin_query_term"""
     if len(p) == 2:
         p[0] = p[1]
     else:
         left = p[1]
-        distinct = p[3] is None or p[3] == "DISTINCT"
+        distinct = p[3] == "DISTINCT" or not p[3]
         right = p[4]
         if p[2] == "UNION":
             p[0] = Union(p.lineno(1), p.lexpos(1), relations=[left, right], distinct=distinct)
@@ -121,12 +123,13 @@ def p_nonjoin_query_expression(p):
 
 # non-join query term
 def p_nonjoin_query_term(p):
-    r"""nonjoin_query_term : nonjoin_query_primary"""
+    r"""nonjoin_query_term : nonjoin_query_primary
+                           | nonjoin_query_term INTERSECT set_quantifier_opt nonjoin_query_primary"""
     if len(p) == 2:
         p[0] = p[1]
     else:
-        distinct = p[3] is None or p[3] == "DISTINCT"
-        p[0] = Intersect(p.lineno(1), p.lexpos(1), relations=[p[1], p[3]], distinct=distinct)
+        distinct = p[3] == "DISTINCT" or not p[3]
+        p[0] = Intersect(p.lineno(1), p.lexpos(1), relations=[p[1], p[4]], distinct=distinct)
 
 
 # non-join query primary
