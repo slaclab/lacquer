@@ -221,7 +221,6 @@ class PrestoTests(unittest.TestCase):
                                            criteria=NaturalJoin()))
                          )
 
-
     def test_non_reserved(self):
         assert_statement("SELECT zone FROM t",
                          simple_query(select_list(QualifiedNameReference(name=QualifiedName.of("zone"))),

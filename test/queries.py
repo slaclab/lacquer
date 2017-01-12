@@ -43,9 +43,9 @@ class TestQueries(unittest.TestCase):
         for query in self.queries:
             if query[:2] == "--":
                 continue
-            tree = parser.parse(query, tracking=True)
             try:
-                format_sql(tree, None)
+                tree = parser.parse(query, tracking=True)
+                format_sql(tree, 0)
             except Exception as e:
                 err += 1
                 print("\n\n")

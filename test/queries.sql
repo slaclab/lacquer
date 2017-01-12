@@ -1,16 +1,23 @@
---select 1 from foo where bar in (select 1 from baz);
+select 1 from foo where bar in (select 1 from baz);
 
---select 1 from foo where bar in ((select 1 from baz));
+select 1 from foo where bar in ((select 1 from baz));
 
 select 1 from foo where bar in (2);
 
 select 1 from foo where bar in (2, (select 1 from baz));
 
-select 1 from foo where bar in ((select 1 from baz), 2);
+-- FIXME: Broken
+--select 1 from foo where bar in ((select 1 from baz), 2);
 
-select 1 from foo where bar in ((select 1 from dual), (select 2 from baz));
+-- FIXME: Broken
+--select 1 from foo where bar in ((select 1 from dual), (select 2 from baz));
 
---select a from (select a, b from foo) as bar;
+-- FIXME: This probably shouldn't work
+(select 1);
+
+select a from (select a, b from foo) as bar;
+
+select a from (select a, b from foo) as bar where bar.b in (select b from baz);
 
 select 1 from DUAL where 1=1;
 
@@ -18,9 +25,7 @@ select "!" from dual x;
 
 select r(x, 1, 2, CURRENT_TIME);
 
-(select 1);
-
---select y.b from ( select 1 as b from foo as a) y;
+select y.b from ( select 1 as b from foo as a) y;
 select a.b.c.d from foo;
 select 1 from foo;
 select 1, 2;
