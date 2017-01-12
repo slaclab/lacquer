@@ -92,13 +92,15 @@ class LongLiteral(Literal):
 
 
 class BooleanLiteral(Literal):
-    """
-    {'type': BooleanLiteral, 'name': TRUE_LITERAL = new  BooleanLiteral(null, "true"), 'order': 0}
-    {'type': BooleanLiteral, 'name': FALSE_LITERAL = new  BooleanLiteral(null, "false"), 'order': 1}
-    """
+    TRUE_LITERAL = None
+    FALSE_LITERAL = None
+
     def __init__(self, line=None, pos=None, value=None):
         super(BooleanLiteral, self).__init__(line, pos)
         self.value = value.lower() == "true"
 
     def accept(self, visitor, context):
         return visitor.visit_boolean_literal(self, context)
+
+BooleanLiteral.TRUE_LITERAL = BooleanLiteral(value="TRUE")
+BooleanLiteral.FALSE_LITERAL = BooleanLiteral(value="FALSE")
