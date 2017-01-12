@@ -19,7 +19,7 @@ setup(
     name='lacquer',
     version='0.1',
     packages=find_packages(),
-    url='http://github.com/lsst-dm/lacquer',
+    url='http://github.com/slaclab/lacquer',
     license='Apache License 2.0',
     author='Brian Van Klaveren',
     author_email='bvan@slac.stanford.edu',
