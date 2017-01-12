@@ -3,7 +3,7 @@ from .join_criteria import JoinOn
 
 class AstVisitor(object):
 
-    def process(self, node, context):
+    def process(self, node, context=None):
         return node.accept(self, context)
 
     def visit_node(self, node, context):

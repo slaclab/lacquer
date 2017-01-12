@@ -1,7 +1,8 @@
 import unittest
 import os
-from lacquer.parsers.parser import parser
-from lacquer.formatter.formatter import format_sql
+
+from lacquer import parser
+from lacquer.formatter import format_sql
 from lacquer.formatter.json import NodeEncoder
 
 

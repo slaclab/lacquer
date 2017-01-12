@@ -1,7 +1,7 @@
 import unittest
-from lacquer.tree import *
 
-from lacquer.parsers.parser import parser, expression_parser
+from lacquer import parser, expression_parser
+from lacquer.tree import *
 
 negative = ArithmeticUnaryExpression.negative
 positive = ArithmeticUnaryExpression.positive
