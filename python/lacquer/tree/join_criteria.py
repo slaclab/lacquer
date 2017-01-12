@@ -1,6 +1,17 @@
 
 class JoinCriteria(object):
-    pass
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            # skip dunders
+            keys = [key for key in self.__dict__.keys() if "__" not in key]
+            for key in keys:
+                if getattr(self, key) != getattr(other, key):
+                    return False
+            return True
+        return False
+
+    def __repr__(self):
+        return str(self)
 
 
 class NaturalJoin(JoinCriteria):
