@@ -93,10 +93,12 @@ if __name__ == "__main__":
     check_extracted_columns("select a as foo, b as bar from c, d")
     check_extracted_columns("select foo.a as foo_a, bar.b as bar_b, c from foo, bar", True)
     check_extracted_columns("select foo.a as foo_a, bar.b as bar_b, c from x foo, y bar", True)
-    check_extracted_columns("select foo.a as foo_a, bar.b as bar_b, c from (select a from foo) foo, y bar", True)
+    check_extracted_columns("select foo.a as foo_a, bar.b as bar_b, c "
+                            "from (select a from foo) foo, y bar", True)
     check_extracted_columns("select a, b from c join d using(foo) join e using (bar)")
     check_extracted_columns("select 1, a from c join d using(foo) join e using (bar)")
-    check_extracted_columns("select (select 1 from foo), a from c join d using(foo) join e using (bar)")
+    check_extracted_columns("select (select 1 from foo), a "
+                            "from c join d using(foo) join e using (bar)")
     check_extracted_columns("select 1, 20+a from c join d using(foo) join e using (bar)")
 
     print("Running subquery checkers\n\n")

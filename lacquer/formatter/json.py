@@ -12,7 +12,8 @@ class NodeEncoder(JSONEncoder):
             return ret
 
         if isinstance(obj, Node):
-            keys = [key for key in obj.__dict__.keys() if key[0] != '_' and key not in ('line', 'pos')]
+            keys = [key for key in obj.__dict__.keys() if
+                    key[0] != '_' and key not in ('line', 'pos')]
             ret = {key: getattr(obj, key) for key in keys if getattr(obj, key)}
             return ret
 

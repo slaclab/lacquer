@@ -3,6 +3,7 @@ from ply import yacc
 
 from lacquer.tree import *
 from lacquer.parsers.lexer import tokens
+tokens = tokens
 
 
 def p_statement(p):
@@ -107,8 +108,8 @@ def p_limit_opt(p):
 # QUERY TERM
 def p_nonjoin_query_expression(p):
     r"""nonjoin_query_expression : nonjoin_query_term
-                                 | nonjoin_query_expression UNION set_quantifier_opt nonjoin_query_term
-                                 | nonjoin_query_expression EXCEPT set_quantifier_opt nonjoin_query_term"""
+                        | nonjoin_query_expression UNION set_quantifier_opt nonjoin_query_term
+                        | nonjoin_query_expression EXCEPT set_quantifier_opt  nonjoin_query_term"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -124,7 +125,7 @@ def p_nonjoin_query_expression(p):
 # non-join query term
 def p_nonjoin_query_term(p):
     r"""nonjoin_query_term : nonjoin_query_primary
-                           | nonjoin_query_term INTERSECT set_quantifier_opt nonjoin_query_primary"""
+                         | nonjoin_query_term INTERSECT set_quantifier_opt nonjoin_query_primary"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -143,7 +144,7 @@ def p_nonjoin_query_primary(p):
 
 
 def p_simple_table(p):
-    r"""simple_table : query_specification
+    r"""simple_table : query_spec
                      | explicit_table
                      | table_value_constructor"""
     p[0] = p[1]
@@ -175,8 +176,8 @@ def _item_list(p):
         p[0] = None
 
 
-def p_query_specification(p):
-    r"""query_specification : SELECT set_quantifier_opt alt_limit_opt select_items table_expression_opt"""
+def p_query_spec(p):
+    r"""query_spec : SELECT set_quantifier_opt alt_limit_opt select_items table_expression_opt"""
     distinct = p[2] == "DISTINCT"
     select_items = p[4]
     table_expression_opt = p[5]
@@ -450,7 +451,7 @@ def p_comparison_predicate(p):
 
 
 def p_between_predicate(p):
-    r"""between_predicate : value_expression not_opt BETWEEN value_expression AND value_expression"""
+    r"between_predicate : value_expression not_opt BETWEEN value_expression AND value_expression"
     p[0] = BetweenPredicate(p.lineno(1), p.lexpos(1), value=p[1], min=p[4], max=p[6])
     _check_not(p)
 
@@ -513,7 +514,8 @@ def p_numeric_value_expression(p):
                                  | numeric_value_expression MINUS term
                                  | term"""
     if p.slice[1].type == "numeric_value_expression":
-        p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
+        p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1),
+                                          type=p[2], left=p[1], right=p[3])
     else:
         p[0] = p[1]
 
@@ -527,7 +529,8 @@ def p_term(p):
     if p.slice[1].type == "factor":
         p[0] = p[1]
     else:
-        p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
+        p[0] = ArithmeticBinaryExpression(p.lineno(1), p.lexpos(1),
+                                          type=p[2], left=p[1], right=p[3])
 
 
 def p_factor(p):
@@ -592,7 +595,8 @@ def p_case_specification(p):
 
 def p_simple_case(p):
     r"""simple_case : CASE value_expression when_clauses else_opt END"""
-    p[0] = SimpleCaseExpression(p.lineno(1), p.lexpos(1), operand=p[2], when_clauses=p[3], default_value=p[4])
+    p[0] = SimpleCaseExpression(p.lineno(1), p.lexpos(1),
+                                operand=p[2], when_clauses=p[3], default_value=p[4])
 
 
 def p_searched_case(p):
@@ -636,7 +640,7 @@ def p_date_time(p):
                   | LOCALTIME         integer_param_opt
                   | LOCALTIMESTAMP    integer_param_opt"""
     precision = p[2] if len(p) == 3 else None
-    p[0] = CurrentTime(p.lineno(1), p.lexpos(1), type=p[1], precision=p[2])
+    p[0] = CurrentTime(p.lineno(1), p.lexpos(1), type=p[1], precision=precision)
 
 
 def p_comparison_operator(p):
@@ -732,8 +736,10 @@ def p_error(p):
         err.lineno = p.lineno
         err.text = p.lexer.lexdata
         err.msg = "Syntax error"
+        discarded_lines = ""
 
-        discarded_lines = '\n'.join(err.text.split("\n")[:err.lineno-1]) if (err.lineno - 1) else ""
+        if err.lineno - 1:
+            discarded_lines = '\n'.join(err.text.split("\n")[:err.lineno-1])
         err.offset = p.lexpos - len(discarded_lines)
 
         def _print_error(self):

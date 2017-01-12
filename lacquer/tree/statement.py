@@ -91,7 +91,8 @@ class RenameTable(Statement):
 
 
 class CreateTable(Statement):
-    def __init__(self, line=None, pos=None, name=None, elements=None, not_exists=None, properties=None):
+    def __init__(self, line=None, pos=None,
+                 name=None, elements=None, not_exists=None, properties=None):
         super(CreateTable, self).__init__(line, pos)
         self.name = name
         self.elements = elements

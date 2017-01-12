@@ -30,74 +30,81 @@ class PrestoTests(unittest.TestCase):
         assert_expression(".4E-42", DoubleLiteral(value=".4E-42"))
 
     def test_between(self):
-        assert_expression("1 BETWEEN 2 AND 3",
-                          BetweenPredicate(value=LongLiteral(value="1"),
-                                           min=LongLiteral(value="2"), max=LongLiteral(value="3")))
-        assert_expression("1 NOT BETWEEN 2 AND 3",
-                          NotExpression(value=
-                                        BetweenPredicate(value=LongLiteral(value="1"),
-                                                         min=LongLiteral(value="2"), max=LongLiteral(value="3"))))
+        assert_expression(
+            "1 BETWEEN 2 AND 3",
+            BetweenPredicate(value=LongLiteral(value="1"),
+                             min=LongLiteral(value="2"),
+                             max=LongLiteral(value="3")))
+        assert_expression(
+            "1 NOT BETWEEN 2 AND 3",
+            NotExpression(value=BetweenPredicate(value=LongLiteral(value="1"),
+                                                 min=LongLiteral(value="2"),
+                                                 max=LongLiteral(value="3"))))
 
     def test_associativity(self):
-        assert_expression("1 AND 2 OR 3",
-                          LogicalBinaryExpression(type="OR",
-                                                  left=LogicalBinaryExpression(type="AND",
-                                                                               left=LongLiteral(value="1"),
-                                                                               right=LongLiteral(
-                                                                                   value="2")),
-                                                  right=LongLiteral(value="3")))
+        assert_expression(
+            "1 AND 2 OR 3",
+            LogicalBinaryExpression(type="OR",
+                                    left=LogicalBinaryExpression(type="AND",
+                                                                 left=LongLiteral(value="1"),
+                                                                 right=LongLiteral(value="2")),
+                                    right=LongLiteral(value="3")))
 
-        assert_expression("1 OR 2 AND 3",
-                          LogicalBinaryExpression(type="OR",
-                                                  left=LongLiteral(value="1"),
-                                                  right=LogicalBinaryExpression(type="AND",
-                                                                                left=LongLiteral(
-                                                                                    value="2"),
-                                                                                right=LongLiteral(
-                                                                                    value="3"))))
+        assert_expression(
+            "1 OR 2 AND 3",
+            LogicalBinaryExpression(type="OR",
+                                    left=LongLiteral(value="1"),
+                                    right=LogicalBinaryExpression(type="AND",
+                                                                  left=LongLiteral(value="2"),
+                                                                  right=LongLiteral(value="3"))))
 
-        assert_expression("NOT 1 AND 2",
-                          LogicalBinaryExpression(type="AND",
-                                                  left=NotExpression(value=LongLiteral(value="1")),
-                                                  right=LongLiteral(value="2")))
+        assert_expression(
+            "NOT 1 AND 2",
+            LogicalBinaryExpression(type="AND",
+                                    left=NotExpression(value=LongLiteral(value="1")),
+                                    right=LongLiteral(value="2")))
 
-        assert_expression("NOT 1 OR 2",
-                          LogicalBinaryExpression(type="OR",
-                                                  left=NotExpression(value=LongLiteral(value="1")),
-                                                  right=LongLiteral(value="2")))
+        assert_expression(
+            "NOT 1 OR 2",
+            LogicalBinaryExpression(type="OR",
+                                    left=NotExpression(value=LongLiteral(value="1")),
+                                    right=LongLiteral(value="2")))
 
-        assert_expression("-1 + 2", ArithmeticBinaryExpression(type="+",
-                                                               left=negative(LongLiteral(value="1")),
-                                                               right=LongLiteral(value="2")))
+        assert_expression(
+            "-1 + 2", ArithmeticBinaryExpression(type="+",
+                                                 left=negative(LongLiteral(value="1")),
+                                                 right=LongLiteral(value="2")))
 
-        assert_expression("-(1 + 2)", negative(ArithmeticBinaryExpression(type="+",
-                                                                left=LongLiteral(value="1"),
-                                                                right=LongLiteral(value="2"))))
+        assert_expression(
+            "-(1 + 2)", negative(ArithmeticBinaryExpression(type="+",
+                                                            left=LongLiteral(value="1"),
+                                                            right=LongLiteral(value="2"))))
 
-        assert_expression("1 - 2 - 3",
-                          ArithmeticBinaryExpression(type="-",
-                                                     left=ArithmeticBinaryExpression(type="-",
-                                                                                     left=LongLiteral(
-                                                                                         value="1"),
-                                                                                     right=LongLiteral(
-                                                                                         value="2")),
-                                                     right=LongLiteral(value="3")))
+        assert_expression(
+            "1 - 2 - 3",
+            ArithmeticBinaryExpression(type="-",
+                                       left=ArithmeticBinaryExpression(
+                                           type="-",
+                                           left=LongLiteral(value="1"),
+                                           right=LongLiteral(value="2")),
+                                       right=LongLiteral(value="3")))
 
-        assert_expression("1 / 2 / 3",
-                          ArithmeticBinaryExpression(type="/",
-                                                     left=ArithmeticBinaryExpression(type="/",
-                                                                                     left=LongLiteral(
-                                                                                         value="1"),
-                                                                                     right=LongLiteral(
-                                                                                         value="2")),
-                                                     right=LongLiteral(value="3")))
-        assert_expression("1 + 2 * 3",
-                          ArithmeticBinaryExpression(type="+",
-                                                     left=LongLiteral(value="1"),
-                                                     right=ArithmeticBinaryExpression(type="*",
-                                                                                      left=LongLiteral(value="2"),
-                                                                                      right=LongLiteral(value="3")))
-                          )
+        assert_expression(
+            "1 / 2 / 3",
+            ArithmeticBinaryExpression(type="/",
+                                       left=ArithmeticBinaryExpression(
+                                           type="/",
+                                           left=LongLiteral(value="1"),
+                                           right=LongLiteral(value="2")),
+                                       right=LongLiteral(value="3")))
+        assert_expression(
+            "1 + 2 * 3",
+            ArithmeticBinaryExpression(type="+",
+                                       left=LongLiteral(value="1"),
+                                       right=ArithmeticBinaryExpression(
+                                           type="*",
+                                           left=LongLiteral(value="2"),
+                                           right=LongLiteral(value="3"))))
 
     def test_arithmetic_unary(self):
         assert_expression("9", LongLiteral(value="9"))
@@ -126,11 +133,17 @@ class PrestoTests(unittest.TestCase):
         # assert_expression("- -9", negative(negative(LongLiteral(value="9"))))
         # assert_expression("- - 9", negative(negative(LongLiteral(value="9"))))
         #
-        # assert_expression("- + - + 9", negative(positive(negative(positive(LongLiteral(value="9"))))))
-        # assert_expression("-+-+9", negative(positive(negative(positive(LongLiteral(value="9"))))))
+        # assert_expression("- + - + 9",
+        #                   negative(positive(negative(positive(LongLiteral(value="9"))))))
+        # assert_expression("-+-+9",
+        #                   negative(positive(negative(positive(LongLiteral(value="9"))))))
         #
-        # assert_expression("+ - + - + 9", positive(negative(positive(negative(positive(LongLiteral(value="9")))))))
-        # assert_expression("+-+-+9", positive(negative(positive(negative(positive(LongLiteral(value="9")))))))
+        # assert_expression(
+        #          "+ - + - + 9",
+        #          positive(negative(positive(negative(positive(LongLiteral(value="9")))))))
+        # assert_expression(
+        #         "+-+-+9",
+        #         positive(negative(positive(negative(positive(LongLiteral(value="9")))))))
         #
         # assert_expression("- - -9", negative(negative(negative(LongLiteral(value="9")))))
         # assert_expression("- - - 9", negative(negative(negative(LongLiteral(value="9")))))
@@ -205,28 +218,31 @@ class PrestoTests(unittest.TestCase):
                                       )
                          )
 
-        assert_statement("SELECT * FROM a CROSS JOIN b NATURAL JOIN c CROSS JOIN d NATURAL JOIN e",
-                         simple_query(select_list_with_items(AllColumns()),
-                                      Join(join_type="INNER",
-                                           left=Join(join_type="CROSS",
-                                                     left=Join(join_type="INNER",
-                                                               left=Join(join_type="CROSS",
-                                                                         left=Table(name=QualifiedName.of("a")),
-                                                                         right=Table(name=QualifiedName.of("b"))),
-                                                               right=Table(name=QualifiedName.of("c")),
-                                                               criteria=NaturalJoin()),
-                                                     right=Table(name=QualifiedName.of("d"))
-                                                     ),
-                                           right=Table(name=QualifiedName.of("e")),
-                                           criteria=NaturalJoin()))
-                         )
+        assert_statement(
+            "SELECT * FROM a CROSS JOIN b NATURAL JOIN c CROSS JOIN d NATURAL JOIN e",
+            simple_query(
+                select_list_with_items(AllColumns()),
+                Join(join_type="INNER",
+                     left=Join(join_type="CROSS",
+                               left=Join(join_type="INNER",
+                                         left=Join(join_type="CROSS",
+                                                   left=Table(name=QualifiedName.of("a")),
+                                                   right=Table(name=QualifiedName.of("b"))),
+                                         right=Table(name=QualifiedName.of("c")),
+                                         criteria=NaturalJoin()),
+                               right=Table(name=QualifiedName.of("d"))
+                               ),
+                     right=Table(name=QualifiedName.of("e")),
+                     criteria=NaturalJoin()))
+        )
 
     def test_non_reserved(self):
-        assert_statement("SELECT zone FROM t",
-                         simple_query(select_list(QualifiedNameReference(name=QualifiedName.of("zone"))),
-                                      Table(name=QualifiedName.of("t"))
-                                      )
+        assert_statement(
+            "SELECT zone FROM t",
+            simple_query(select_list(QualifiedNameReference(name=QualifiedName.of("zone"))),
+                         Table(name=QualifiedName.of("t"))
                          )
+        )
 
 
 def create_select_123():
@@ -243,7 +259,7 @@ def assert_expression(expr, expected):
 
 def assert_parsed(input, expected, parsed):
     if parsed != expected:
-        msg = "expected input:\n\n{input}\n\nto parse as:\n\n{expected}\n\nbut found:\n\n{parsed}\n"
+        msg = "expected:\n\n{input}\n\nto parse as:\n\n{expected}\n\nbut found:\n\n{parsed}\n"
         print(msg.format(input=input, expected=repr(expected), parsed=repr(parsed)))
 
 

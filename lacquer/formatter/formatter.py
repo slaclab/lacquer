@@ -16,10 +16,12 @@ class Formatter(AstVisitor):
     #     throw new UnsupportedOperationException()
 
     def visit_expression(self, node, unmangle_names):
-        raise NotImplementedError("not implemented: %s.visit%s" % (self.__class__.__name__, node.__class__.__name__))
+        raise NotImplementedError(
+            "not implemented: %s.visit%s" % (self.__class__.__name__, node.__class__.__name__))
 
     def visit_at_time_zone(self, node, context):
-        return "%s AT TIME ZONE %s" % (self.process(node.value, context), self.process(node.time_zone, context))
+        return "%s AT TIME ZONE %s" \
+               % (self.process(node.value, context), self.process(node.time_zone, context))
 
     def visit_current_time(self, node, unmangle_names):
         return "%s%s" % (node.type, "(%s)" % node.precision if node.precision else "")
@@ -42,7 +44,8 @@ class Formatter(AstVisitor):
     #     return "ARRAY[" + ",".join(value_strings.build()) + "]"
 
     def visit_subscript_expression(self, node, unmangle_names):
-        return format_sql(node.base, unmangle_names) + "[%s]" % format_sql(node.index, unmangle_names)
+        return format_sql(node.base, unmangle_names) \
+               + "[%s]" % format_sql(node.index, unmangle_names)
 
     def visit_long_literal(self, node, unmangle_names):
         return str(node.value)
@@ -128,7 +131,8 @@ class Formatter(AstVisitor):
         return "(" + self.process(node.value, unmangle_names) + " IS NOT NULL)"
 
     def visit_none_if_expression(self, node, unmangle_names):
-        return "NULLIF(%s, %s)" % (self.process(node.first, unmangle_names), self.process(node.second, unmangle_names))
+        return "NULLIF(%s, %s)" % (self.process(node.first, unmangle_names),
+                                   self.process(node.second, unmangle_names))
 
     def visit_if_expression(self, node, unmangle_names):
         ret = "IF(" + self.process(node.condition, unmangle_names)
@@ -159,7 +163,8 @@ class Formatter(AstVisitor):
     def visit_like_predicate(self, node, unmangle_names):
         ret = "("
 
-        ret += self.process(node.value, unmangle_names) + " LIKE " + self.process(node.pattern, unmangle_names)
+        ret += self.process(node.value, unmangle_names) + \
+               " LIKE " + self.process(node.pattern, unmangle_names)
 
         if node.escape is not None:
             ret += " ESCAPE " + self.process(node.escape, unmangle_names)
@@ -216,7 +221,8 @@ class Formatter(AstVisitor):
                                            self.process(node.max, unmangle_names))
 
     def visit_in_predicate(self, node, unmangle_names):
-        return "(%s IN %s)" % (self.process(node.value, unmangle_names), self.process(node.value_list, unmangle_names))
+        return "(%s IN %s)" % (self.process(node.value, unmangle_names),
+                               self.process(node.value_list, unmangle_names))
 
     def visit_in_list_expression(self, node, unmangle_names):
         return "(%s)" % self._join_expressions(node.values, unmangle_names)
@@ -225,7 +231,8 @@ class Formatter(AstVisitor):
         parts = []
 
         if node.partition_by:
-            parts.append("PARTITION BY " + self._join_expressions(node.partition_by, unmangle_names))
+            parts.append(
+                "PARTITION BY " + self._join_expressions(node.partition_by, unmangle_names))
         if node.order_by:
             parts.append("ORDER BY " + format_sort_items(node.order_by, unmangle_names))
         if node.frame:
@@ -257,7 +264,9 @@ class Formatter(AstVisitor):
     #             return "UNBOUNDED FOLLOWING"
 
     def _format_binary_expression(self, operator, left, right, unmangle_names):
-        return "(%s %s %s)" % (self.process(left, unmangle_names), operator, self.process(right, unmangle_names))
+        return "(%s %s %s)" % (self.process(left, unmangle_names),
+                               operator,
+                               self.process(right, unmangle_names))
 
     def _join_expressions(self, expressions, unmangle_names):
         return ", ".join([self.process(e, unmangle_names) for e in expressions])
@@ -611,7 +620,8 @@ class SqlFormatter(AstVisitor):
 
         if node.properties:
             self.builder.append(" WITH (")
-            self.builder.append(", ".join(["%s = %s" % (k, v) for k, v in node.properties.items()]))
+            self.builder.append(
+                ", ".join(["%s = %s" % (k, v) for k, v in node.properties.items()]))
             self.builder.append(")")
 
         self.builder.append(" AS ")
@@ -635,7 +645,8 @@ class SqlFormatter(AstVisitor):
 
         if node.properties:
             self.builder.append(" WITH (")
-            self.builder.append(", ".join(["%s = %s" % (k, v) for k, v in node.properties.items()]))
+            self.builder.append(
+                ", ".join(["%s = %s" % (k, v) for k, v in node.properties.items()]))
             self.builder.append(")")
 
         return None
