@@ -24,9 +24,6 @@ class JoinCriteria(object):
             return True
         return False
 
-    def __repr__(self):
-        return str(self)
-
 
 class NaturalJoin(JoinCriteria):
     pass

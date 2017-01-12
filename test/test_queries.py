@@ -17,7 +17,7 @@ import os
 
 from lacquer import parser
 from lacquer.formatter import format_sql
-from lacquer.formatter.json import NodeEncoder
+from lacquer.formatter import JsonNodeEncoder
 
 
 class TestQueries(unittest.TestCase):
@@ -78,7 +78,7 @@ class TestQueries(unittest.TestCase):
                 continue
             try:
                 tree = parser.parse(query, tracking=True)
-                NodeEncoder(indent=4).encode(tree)
+                print(JsonNodeEncoder(indent=4).encode(tree))
             except SyntaxError as e:
                 err += 1
         if err:
