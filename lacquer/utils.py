@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 def node_str_omit_none(node, *args):
     fields = ", ".join([": ".join([a[0], str(a[1])]) for a in args if a[1]])
     return "{clazz}({fields})".format(clazz=node.__class__.__name__, fields=fields)
