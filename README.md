@@ -15,10 +15,12 @@ Data Query Language, which is roughly equivalent to SQL-92.
   * Code can easily be ported to lacquer from Python
 
 ## Known issues
-In the porting, the grammar was ported from LL (ANTLRv4) to LALR (PLY).
-There's a few shift/reduce errors, but most queries parse just fine.
+**Only SELECT statements are currently supported.** This is mostly the case with
+Presto as well.
 
-Queries under test/queries.sql that are commented out don't parse, e.g.:
+In the porting, the grammar was ported from LL (ANTLRv4) to LALR (PLY).
+There's a few shift/reduce errors, but most queries parse just fine, but you 
+may run across a few errors, for example:
 
 ```sql
 select 1 from foo where bar in ((select 1 from baz), 2)
