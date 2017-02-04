@@ -802,7 +802,7 @@ def p_error(p):
         def _print_error(self):
             pointer = " " * self.offset + "^" * len(self.token_value)
             print(self.line + "\n" + pointer)
-        _print_error = types.MethodType(_print_error, err, SyntaxError)
+        _print_error = types.MethodType(_print_error, err)
 
         err.print_file_and_line = _print_error
 
