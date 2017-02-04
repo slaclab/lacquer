@@ -14,6 +14,7 @@
 
 from __future__ import print_function
 from ply import yacc
+import types
 
 from lacquer.tree import *
 from lacquer.parsers.lexer import tokens
@@ -788,22 +789,25 @@ def p_error(p):
         err = SyntaxError()
         err.lineno = p.lineno
         err.text = p.lexer.lexdata
-        err.msg = "Syntax error"
-        discarded_lines = ""
+        err.token_value = p.value
 
-        if err.lineno - 1:
-            discarded_lines = '\n'.join(err.text.split("\n")[:err.lineno-1])
-        err.offset = p.lexpos - len(discarded_lines)
+        text_lines = err.text.split("\n")
+        line_lengths = [len(line)+1 for line in text_lines]
+        err_line_offset = sum(line_lengths[:err.lineno-1])
+
+        err.line = text_lines[err.lineno-1]
+        err.offset = p.lexpos - err_line_offset
+        err.msg = "Syntax error at position %d (%s)" % (err.offset, err.token_value)
 
         def _print_error(self):
-            pointer = " " * err.offset + "^"
-            text = '\n'.join(err.text.split("\n")[:err.lineno])
-            print(text + "\n" + pointer)
-            return text + "\n" + pointer
+            pointer = " " * self.offset + "^" * len(self.token_value)
+            print(self.line + "\n" + pointer)
+        _print_error = types.MethodType(_print_error, err, SyntaxError)
 
         err.print_file_and_line = _print_error
+
         raise err
-    raise SyntaxError("Syntax error in input!")
+    raise SyntaxError("Syntax error in input. Check your statement")
 
 parser = yacc.yacc(tabmodule="parser_table")
 expression_parser = yacc.yacc(tabmodule="expression_parser_table", start="single_expression")
