@@ -143,14 +143,11 @@ class LambdaExpression(Expression):
 
     
 class Cast(Expression):
-    def __init__(self, line=None, pos=None, expression=None, type=None, safe=None):
+    def __init__(self, line=None, pos=None, expression=None, data_type=None, safe=None):
         super(Cast, self).__init__(line, pos)
         self.expression = expression
-        self.type = type
+        self.data_type = data_type
         self.safe = safe
-
-    # def is_safe(self):
-    #     pass
 
     def accept(self, visitor, context):
         return visitor.visit_cast(self, context)

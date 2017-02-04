@@ -575,7 +575,8 @@ def p_base_primary_expression(p):
                                 | subquery
                                 | function_call
                                 | date_time
-                                | case_specification"""
+                                | case_specification
+                                | cast_specification"""
     if p.slice[1].type == "qualified_name":
         p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=p[1])
     else:
@@ -618,6 +619,11 @@ def p_searched_case(p):
     p[0] = SearchedCaseExpression(p.lineno(1), p.lexpos(1), when_clauses=p[2], default_value=p[3])
 
 
+def p_cast_specification(p):
+    r"""cast_specification : CAST LPAREN value_expression AS data_type RPAREN"""
+    p[0] = Cast(p.lineno(1), p.lexpos(1), expression=p[3], data_type=p[5], safe=False)
+
+
 def p_when_clauses(p):
     r"""when_clauses : when_clauses when_clause
                      | when_clause"""
@@ -645,6 +651,39 @@ def p_call_list(p):
     r"""call_list : call_list COMMA expression
                   | expression"""
     _item_list(p)
+
+
+def p_data_type(p):
+    r"""data_type : base_data_type type_param_list_opt"""
+    signature = p[1]
+    if p[2]:
+        # Normalize param list
+        type_params = [str(_type) for _type in p[2]]
+        signature += "(" + ','.join(type_params) + ")"
+    p[0] = signature
+
+
+def p_type_param_list_opt(p):
+    r"""type_param_list_opt : LPAREN type_param_list RPAREN
+                            | empty"""
+    p[0] = p[2] if p[1] else p[1]
+
+
+def p_type_param_list(p):
+    r"""type_param_list : type_param_list COMMA type_parameter
+                        | type_parameter"""
+    _item_list(p)
+
+
+def p_type_parameter(p):
+    r"""type_parameter : INTEGER
+                       | base_data_type"""
+    p[0] = p[1]
+
+
+def p_base_data_type(p):
+    r"""base_data_type : identifier"""
+    p[0] = p[1]
 
 
 def p_date_time(p):

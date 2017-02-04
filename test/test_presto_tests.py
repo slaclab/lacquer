@@ -43,6 +43,20 @@ class PrestoTests(unittest.TestCase):
         assert_expression(".4E+42", DoubleLiteral(value=".4E42"))
         assert_expression(".4E-42", DoubleLiteral(value=".4E-42"))
 
+    def test_cast(self):
+        assert_expression("CAST(a AS BIGINT)",
+                          Cast(expression=QualifiedNameReference(name=QualifiedName.of("a")),
+                               data_type="BIGINT", safe=False))
+        assert_expression("CAST(a AS VARCHAR(2))",
+                          Cast(expression=QualifiedNameReference(name=QualifiedName.of("a")),
+                               data_type="VARCHAR(2)", safe=False))
+        assert_expression("CAST(a AS NUMBER(2,3))",
+                          Cast(expression=QualifiedNameReference(name=QualifiedName.of("a")),
+                               data_type="NUMBER(2,3)", safe=False))
+        assert_expression("CAST(a AS FOO(BAR))",
+                          Cast(expression=QualifiedNameReference(name=QualifiedName.of("a")),
+                               data_type="FOO(BAR)", safe=False))
+
     def test_between(self):
         assert_expression(
             "1 BETWEEN 2 AND 3",

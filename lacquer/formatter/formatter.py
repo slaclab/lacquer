@@ -192,8 +192,9 @@ class Formatter(AstVisitor):
         return "*"
 
     def visit_cast(self, node, unmangle_names):
+        # Note: TRY_CAST not yet supported
         return ("TRY_CAST" if node.safe else "CAST") +\
-                "(" + self.process(node.expression, unmangle_names) + " AS " + node.type + ")"
+                "(" + self.process(node.expression, unmangle_names) + " AS " + node.data_type + ")"
 
     def visit_searched_case_expression(self, node, unmangle_names):
         parts = []
