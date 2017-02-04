@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .join_criteria import JoinOn
+from .join_criteria import JoinOn, JoinUsing
 
 
 class AstVisitor(object):
@@ -566,9 +566,11 @@ class DefaultTraversalVisitor(AstVisitor):
     def visit_join(self, node, context):
         self.process(node.left, context)
         self.process(node.right, context)
-        join_on = [criteria for criteria in node.criter if isinstance(criteria, JoinOn)]
-        for criteria in join_on:
-            self.process(criteria.expression, context)
+
+        if isinstance(node.criteria, JoinOn):
+            self.process(node.criteria.expression, context)
+        elif isinstance(node.criteria, JoinUsing):
+            self.process(node.criteria.columns)
 
         return None
 
