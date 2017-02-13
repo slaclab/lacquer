@@ -107,7 +107,7 @@ class Formatter(AstVisitor):
     def visit_function_call(self, node, unmangle_names):
         ret = ""
         arguments = self._join_expressions(node.arguments, unmangle_names)
-        if not node.arguments and "count" == node.name.suffix.lower():
+        if not node.arguments and "count" == node.name.parts[0].lower():
             arguments = "*"
         if node.distinct:
             arguments = "DISTINCT " + arguments
