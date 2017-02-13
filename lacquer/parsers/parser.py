@@ -598,9 +598,21 @@ def p_value(p):
 
 
 def p_function_call(p):
-    r"""function_call : qualified_name LPAREN call_list RPAREN"""
+    r"""function_call : qualified_name LPAREN call_args RPAREN"""
     distinct = p[3] is None or p[3] == "DISTINCT"
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=distinct, arguments=p[3])
+
+
+def p_call_args(p):
+    r"""call_args : call_list
+                  | empty_call_args"""
+    p[0] = p[1]
+
+
+def p_empty_call_args(p):
+    r"""empty_call_args : ASTERISK
+                        | empty"""
+    p[0] = []
 
 
 def p_case_specification(p):
