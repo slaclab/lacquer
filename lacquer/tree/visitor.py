@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .join_criteria import JoinOn, JoinUsing
+from .grouping import SimpleGroupBy, GroupingSets
 
 
 class AstVisitor(object):
@@ -516,7 +517,12 @@ class DefaultTraversalVisitor(AstVisitor):
         if node.where:
             self.process(node.where, context)
         if node.group_by:
-            for grouping_element in node.group_by.grouping_elements:
+            grouping_elements = []
+            if isinstance(node.group_by, SimpleGroupBy):
+                grouping_elements = node.group_by.columns
+            elif isinstance(node.group_by, GroupingSets):
+                grouping_elements = node.group_by.sets
+            for grouping_element in grouping_elements:
                 self.process(grouping_element, context)
         if node.having:
             self.process(node.having, context)
