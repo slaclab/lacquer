@@ -129,9 +129,9 @@ def p_nonjoin_query_expression(p):
         p[0] = p[1]
     else:
         left = p[1]
-        distinct = p[3] == "DISTINCT" or not p[3]
+        distinct = p[3] is None or p[3].upper() == "DISTINCT"
         right = p[4]
-        if p[2] == "UNION":
+        if p.slice[2].type == "UNION":
             p[0] = Union(p.lineno(1), p.lexpos(1), relations=[left, right], distinct=distinct)
         else:
             p[0] = Except(p.lineno(1), p.lexpos(1), left=p[1], right=p[3], distinct=distinct)
@@ -144,7 +144,7 @@ def p_nonjoin_query_term(p):
     if len(p) == 2:
         p[0] = p[1]
     else:
-        distinct = p[3] == "DISTINCT" or not p[3]
+        distinct = p[3] is None or p[3].upper() == "DISTINCT"
         p[0] = Intersect(p.lineno(1), p.lexpos(1), relations=[p[1], p[4]], distinct=distinct)
 
 
@@ -193,7 +193,7 @@ def _item_list(p):
 
 def p_query_spec(p):
     r"""query_spec : SELECT set_quantifier_opt alt_limit_opt select_items table_expression_opt"""
-    distinct = p[2] == "DISTINCT"
+    distinct = p[2] and p[2].upper() == "DISTINCT"
     select_items = p[4]
     table_expression_opt = p[5]
     from_relations = table_expression_opt.from_ if table_expression_opt else None
@@ -599,7 +599,8 @@ def p_value(p):
 
 def p_function_call(p):
     r"""function_call : qualified_name LPAREN call_args RPAREN"""
-    distinct = p[3] is None or p[3] == "DISTINCT"
+    # FIXME: Distinct and arguments may need to be corrected
+    distinct = p[3] is None or (isinstance(p[3], str) and p[3].upper() == "DISTINCT")
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=distinct, arguments=p[3])
 
 
