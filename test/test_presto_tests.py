@@ -188,14 +188,46 @@ class PrestoTests(unittest.TestCase):
 
     def test_intersect(self):
         assert_statement(
-            "SELECT 123 INTERSECT DISTINCT SELECT 123 INTERSECT ALL SELECT 123",
+            "SELECT 123 INTERSECT DISTINCT SELECT 456 INTERSECT ALL SELECT 789",
             Query(query_body=Intersect(
                 relations=[
-                    Intersect(relations=[create_select_123(), create_select_123()], distinct=True),
-                    create_select_123()
+                    Intersect(relations=[_select(123), _select(456)], distinct=True),
+                    _select(789)
                 ], distinct=False)
             )
         )
+
+        assert_statement(
+            "SELECT 123 intersect distinct SELECT 456 INTERSECT all SELECT 789",
+            Query(query_body=Intersect(
+                relations=[
+                    Intersect(relations=[_select(123), _select(456)], distinct=True),
+                    _select(789)
+                ], distinct=False)
+            )
+        )
+
+    def test_union(self):
+        assert_statement(
+            "SELECT 123 UNION SELECT 456 union ALL SELECT 789",
+            Query(query_body=Union(
+                relations=[
+                    Union(relations=[_select(123), _select(456)], distinct=True),
+                    _select(789)
+                ], distinct=False)
+            )
+        )
+
+        assert_statement(
+            "SELECT 123 UNION distinct SELECT 456 union DISTINCT SELECT 789",
+            Query(query_body=Union(
+                relations=[
+                    Union(relations=[_select(123), _select(456)], distinct=True),
+                    _select(789)
+                ], distinct=True)
+            )
+        )
+
 
     def test_group_by(self):
         assert_statement("SELECT * FROM table1 GROUP BY a",
@@ -273,8 +305,8 @@ class PrestoTests(unittest.TestCase):
         )
 
 
-def create_select_123():
-    return parser.parse("select 123").query_body
+def _select(x):
+    return parser.parse("select %s" % x).query_body
 
 
 def assert_statement(expr, expected):
