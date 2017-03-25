@@ -16,8 +16,9 @@ from collections import OrderedDict
 
 from lacquer import parser
 from lacquer.tree import AliasedRelation
-from lacquer.tree import Join
 from lacquer.tree import DefaultTraversalVisitor
+from lacquer.tree import FunctionCall
+from lacquer.tree import Join
 from lacquer.tree import QualifiedNameReference
 from lacquer.tree import SingleColumn
 from lacquer.tree import Table
@@ -48,13 +49,25 @@ def check_extracted_columns(query, with_resolution=False):
                     self.tables.append(node.from_)
                 self.tables.reverse()
 
+    def get_all_qualified(expression, qualified=None):
+        if qualified is None:
+            qualified = []
+
+        if isinstance(expression, QualifiedNameReference):
+            qualified.append(expression)
+        elif isinstance(expression, FunctionCall):
+            for argument in expression.arguments:
+                get_all_qualified(argument, qualified)
+
+        return qualified
+
     def print_column_resolution_order(columns, tables):
         table_columns = []
         tables_and_aliases = OrderedDict()
         for i in range(len(columns)):
             column = columns[i]
-            if isinstance(column.expression, QualifiedNameReference):
-                table_columns.append((column, i))
+            for qualified in get_all_qualified(column.expression):
+                table_columns.append((qualified, i))
 
         for table in tables:
             if isinstance(table, AliasedRelation):
@@ -67,8 +80,7 @@ def check_extracted_columns(query, with_resolution=False):
 
         print("\nTable Column Resolution:")
         for (column, position) in table_columns:
-            names = column.expression.name.parts
-            column_name = names[-1]
+            names = column.name.parts
             resolution = []
             if len(names) > 1:
                 qualified_table_name = ".".join(names[:-1])
@@ -114,7 +126,8 @@ if __name__ == "__main__":
     check_extracted_columns("select (select 1 from foo), a "
                             "from c join d using(foo) join e using (bar)")
     check_extracted_columns("select 1, 20+a from c join d using(foo) join e using (bar)")
-
+    check_extracted_columns("select sum(foo) from a", True)
+    check_extracted_columns("select concat(concat(foo)) from a", True)
     print("Running subquery checkers\n\n")
     check_has_subquery("select a from b")
     check_has_subquery("select a from (select a from b)")
