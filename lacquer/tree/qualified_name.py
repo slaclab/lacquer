@@ -36,3 +36,6 @@ class QualifiedName(object):
         if isinstance(other, self.__class__):
             return self.parts == other.parts
         return False
+
+    def __hash__(self):
+        return hash(tuple(self.parts))
