@@ -822,5 +822,7 @@ def p_error(p):
         raise err
     raise SyntaxError("Syntax error in input. Check your statement")
 
-parser = yacc.yacc(tabmodule="parser_table")
-expression_parser = yacc.yacc(tabmodule="expression_parser_table", start="single_expression")
+parser = yacc.yacc(tabmodule="parser_table", debugfile="parser.out")
+expression_parser = yacc.yacc(tabmodule="expression_parser_table",
+                              start="single_expression",
+                              debugfile="expression_parser.out")
