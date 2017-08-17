@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 class QualifiedName(object):
     def __init__(self, parts=None):
         self.parts = parts
@@ -30,12 +31,15 @@ class QualifiedName(object):
         return '.'.join(self.parts or [])  # TODO: .lower() ?
 
     def __repr__(self):
-        return "QualifiedName(%s)" % '.'.join(self.parts or [])
+        return "QualifiedName.of(\"%s\")" % '.'.join(self.parts or [])
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.parts == other.parts
         return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __hash__(self):
         return hash(tuple(self.parts))

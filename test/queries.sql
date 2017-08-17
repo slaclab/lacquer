@@ -12,7 +12,6 @@ select 1 from foo where bar in (2, (select 1 from baz));
 -- FIXME: Broken
 --select 1 from foo where bar in ((select 1 from dual), (select 2 from baz));
 
--- FIXME: This probably shouldn't work
 (select 1);
 
 select a from (select a, b from foo) as bar;
@@ -44,6 +43,7 @@ select 1 from foo a;
 select 1 from foo as a;
 select a.bar from foo a;
 select 1 from foo a where a.bar = 3 or z.bax = 4;
+select 1 from foo a where (a.bar = 3 or z.bax = 4);
 select `foo`;
 
 select a, b from foo order by a;
@@ -53,6 +53,10 @@ select a, b from foo where 1=1 order by a, b;
 select foo.a as foo_a, bar.b as bar_b, c from foo, y bar order by foo_a, bar_b;
 
 select foo, bar from baz group by foo order by baz;
+
+select bar.foo from bar join baz on (bar.foo = baz.foo);
+
+select bar.foo from bar join baz on bar.foo = baz.foo;
 
 select
 	l_returnflag,

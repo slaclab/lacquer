@@ -44,10 +44,6 @@ class Node(object):
             return True
         return False
 
-# class NodeLocation:
-#    def __init__(self, line=None, pos=None, line=None, char_position_in_line=None):
-#        self.line = line
-#        self.pos = pos
-#        self.line = line
-#        self.char_position_in_line = charPositionInLine
-#
+    def __ne__(self, other):
+        return not self.__eq__(other)
+

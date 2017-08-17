@@ -78,7 +78,7 @@ class TestQueries(unittest.TestCase):
                 continue
             try:
                 tree = parser.parse(query, tracking=True)
-                print(JsonNodeEncoder(indent=4).encode(tree))
+                JsonNodeEncoder(indent=4).encode(tree)
             except SyntaxError as e:
                 err += 1
         if err:

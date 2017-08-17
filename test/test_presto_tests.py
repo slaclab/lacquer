@@ -228,7 +228,6 @@ class PrestoTests(unittest.TestCase):
             )
         )
 
-
     def test_group_by(self):
         assert_statement("SELECT * FROM table1 GROUP BY a",
                          Query(
@@ -304,6 +303,32 @@ class PrestoTests(unittest.TestCase):
                          )
         )
 
+    def test_where(self):
+        assert_statement(
+            'select x from foo where bar = 3',
+            simple_query(
+                select_list(QualifiedNameReference(name=QualifiedName.of("x"))),
+                Table(name=QualifiedName.of("foo")),
+                where=ComparisonExpression(
+                    type='=',
+                    left=QualifiedNameReference(name=QualifiedName.of("bar")),
+                    right=LongLiteral(value=3)
+                 )
+            )
+        )
+
+        assert_statement(
+            'select x from foo where (bar = 3)',
+            simple_query(
+                select_list(QualifiedNameReference(name=QualifiedName.of("x"))),
+                Table(name=QualifiedName.of("foo")),
+                where=ComparisonExpression(
+                    type='=',
+                    left=QualifiedNameReference(name=QualifiedName.of("bar")),
+                    right=LongLiteral(value=3)
+                 )
+            )
+        )
 
 def _select(x):
     return parser.parse("select %s" % x).query_body
@@ -318,9 +343,13 @@ def assert_expression(expr, expected):
 
 
 def assert_parsed(input, expected, parsed):
-    if parsed != expected:
-        msg = "expected:\n\n{input}\n\nto parse as:\n\n{expected}\n\nbut found:\n\n{parsed}\n"
-        print(msg.format(input=input, expected=repr(expected), parsed=repr(parsed)))
+    template = ("expected:\n\n{input}\n\n"
+                "to parse as:\n\n{expected}\n\n"
+                "but found:\n\n{parsed}\n")
+    msg = template.format(input=input,
+                          expected=repr(expected),
+                          parsed=repr(parsed))
+    assert parsed == expected, msg
 
 
 def select_list(*args):
@@ -331,5 +360,5 @@ def select_list_with_items(*args):
     return Select(select_items=list(args))
 
 
-def simple_query(select, from_=None):
-    return Query(query_body=QuerySpecification(select=select, from_=from_))
+def simple_query(select, from_=None, where=None):
+    return Query(query_body=QuerySpecification(select=select, from_=from_, where=where))

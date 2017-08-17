@@ -23,10 +23,3 @@ class Select(Node):
 
     def accept(self, visitor, context):
         return visitor.visit_select(self, context)
-
-    # def __str__(self):
-    #     """
-    #     return MoreObjects.toStringHelper(this)
-    #         .add("distinct", distinct).add("selectItems", selectItems).omitNullValues().toString();
-    #     """
-

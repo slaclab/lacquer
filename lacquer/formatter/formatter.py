@@ -438,7 +438,7 @@ class SqlFormatter(AstVisitor):
                 self.builder.append(")")
             elif isinstance(criteria, JoinOn):
                 self.builder.append(" ON (")
-                self.builder.append(format_expression(node.expression))
+                self.builder.append(format_expression(node.criteria.expression))
                 self.builder.append(")")
             elif not isinstance(criteria, NaturalJoin):
                 raise ValueError("unknown join criteria: " + criteria)
