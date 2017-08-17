@@ -25,15 +25,14 @@ class JoinCriteria(object):
             return True
         return False
 
-    def __repr__(self):
-        clz = self.__class__
-        argspec = [x for x in getargspec(clz.__init__).args[1:] if self.__dict__[x] is not None]
-        args = ", ".join(["=".join((arg, repr(getattr(self, arg)))) for arg in argspec])
-        return "{name}({args})".format(name=clz.__name__, args=args)
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class NaturalJoin(JoinCriteria):
-    pass
+    def __repr__(self):
+        clz = self.__class__
+        return "{name}()".format(name=clz.__name__)
 
 
 class JoinUsing(JoinCriteria):
@@ -43,6 +42,11 @@ class JoinUsing(JoinCriteria):
     def __str__(self):
         return "{}{{columns={}}}".format(self.__class__.__name__, str(self.columns))
 
+    def __repr__(self):
+        clz = self.__class__
+        args = "columns=" + repr(self.columns)
+        return "{name}({args})".format(name=clz.__name__, args=args)
+
 
 class JoinOn(JoinCriteria):
     def __init__(self, expression=None):
@@ -50,3 +54,8 @@ class JoinOn(JoinCriteria):
 
     def __str__(self):
         return "{}{{expression={}}}".format(self.__class__.__name__, str(self.expression))
+
+    def __repr__(self):
+        clz = self.__class__
+        args = "expression=" + repr(self.expression)
+        return "{name}({args})".format(name=clz.__name__, args=args)
