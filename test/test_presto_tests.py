@@ -303,6 +303,32 @@ class PrestoTests(unittest.TestCase):
                          )
         )
 
+    def test_where(self):
+        assert_statement(
+            'select x from foo where bar = 3',
+            simple_query(
+                select_list(QualifiedNameReference(name=QualifiedName.of("x"))),
+                Table(name=QualifiedName.of("foo")),
+                where=ComparisonExpression(
+                    type='=',
+                    left=QualifiedNameReference(name=QualifiedName.of("bar")),
+                    right=LongLiteral(value=3)
+                 )
+            )
+        )
+
+        assert_statement(
+            'select x from foo where (bar = 3)',
+            simple_query(
+                select_list(QualifiedNameReference(name=QualifiedName.of("x"))),
+                Table(name=QualifiedName.of("foo")),
+                where=ComparisonExpression(
+                    type='=',
+                    left=QualifiedNameReference(name=QualifiedName.of("bar")),
+                    right=LongLiteral(value=3)
+                 )
+            )
+        )
 
 def _select(x):
     return parser.parse("select %s" % x).query_body
@@ -334,5 +360,5 @@ def select_list_with_items(*args):
     return Select(select_items=list(args))
 
 
-def simple_query(select, from_=None):
-    return Query(query_body=QuerySpecification(select=select, from_=from_))
+def simple_query(select, from_=None, where=None):
+    return Query(query_body=QuerySpecification(select=select, from_=from_, where=where))
