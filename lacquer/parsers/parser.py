@@ -193,7 +193,7 @@ def _item_list(p):
 
 def p_query_spec(p):
     r"""query_spec : SELECT set_quantifier_opt alt_limit_opt select_items table_expression_opt"""
-    distinct = p[2] and p[2].upper() == "DISTINCT"
+    distinct = p[2].upper() == "DISTINCT" if p[2] else False
     select_items = p[4]
     table_expression_opt = p[5]
     from_relations = table_expression_opt.from_ if table_expression_opt else None
@@ -228,8 +228,12 @@ def p_alt_limit_opt(p):
 
 def p_where_opt(p):
     r"""where_opt : WHERE search_condition
+                  | WHERE LPAREN search_condition RPAREN
                   | empty"""
-    p[0] = p[2] if p[1] else None
+    if p.slice[1].type == "WHERE":
+        p[0] = p[2] if len(p) == 3 else p[3]
+    else:
+        p[0] = None
 
 
 def p_group_by_opt(p):
@@ -357,9 +361,10 @@ def p_outer_opt(p):
 
 def p_join_criteria(p):
     r"""join_criteria : ON search_condition
+                      | ON LPAREN search_condition RPAREN
                       | USING LPAREN join_columns RPAREN"""
-    if len(p) == 3:
-        p[0] = JoinOn(expression=p[2])
+    if p.slice[1].type == "ON":
+        p[0] = JoinOn(expression=p[2] if len(p) == 3 else p[3])
     else:
         p[0] = JoinUsing(columns=p[3])
 
@@ -810,13 +815,12 @@ def p_error(p):
 
         err.line = text_lines[err.lineno-1]
         err.offset = p.lexpos - err_line_offset
-        err.msg = "Syntax error at position %d (%s)" % (err.offset, err.token_value)
-
+        err.msg = ("Syntax error at position %d (%s)"
+                   % (err.offset, str(err.token_value)))
         def _print_error(self):
-            pointer = " " * self.offset + "^" * len(self.token_value)
+            pointer = "*" * self.offset + "^" * len(self.token_value)
             print(self.line + "\n" + pointer)
         _print_error = types.MethodType(_print_error, err)
-
         err.print_file_and_line = _print_error
 
         raise err
