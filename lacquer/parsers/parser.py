@@ -818,7 +818,7 @@ def p_error(p):
         err.msg = ("Syntax error at position %d (%s)"
                    % (err.offset, str(err.token_value)))
         def _print_error(self):
-            pointer = "*" * self.offset + "^" * len(self.token_value)
+            pointer = " " * self.offset + "^" * len(self.token_value)
             print(self.line + "\n" + pointer)
         _print_error = types.MethodType(_print_error, err)
         err.print_file_and_line = _print_error
