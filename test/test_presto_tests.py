@@ -228,7 +228,6 @@ class PrestoTests(unittest.TestCase):
             )
         )
 
-
     def test_group_by(self):
         assert_statement("SELECT * FROM table1 GROUP BY a",
                          Query(
@@ -318,9 +317,13 @@ def assert_expression(expr, expected):
 
 
 def assert_parsed(input, expected, parsed):
-    if parsed != expected:
-        msg = "expected:\n\n{input}\n\nto parse as:\n\n{expected}\n\nbut found:\n\n{parsed}\n"
-        print(msg.format(input=input, expected=repr(expected), parsed=repr(parsed)))
+    template = ("expected:\n\n{input}\n\n"
+                "to parse as:\n\n{expected}\n\n"
+                "but found:\n\n{parsed}\n")
+    msg = template.format(input=input,
+                          expected=repr(expected),
+                          parsed=repr(parsed))
+    assert parsed == expected, msg
 
 
 def select_list(*args):
