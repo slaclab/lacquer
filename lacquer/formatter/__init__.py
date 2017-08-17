@@ -15,7 +15,7 @@
 from .formatter import format_sql
 
 from collections import OrderedDict
-from lacquer.tree import QualifiedName, QuerySpecification
+from lacquer.tree import QualifiedName, QuerySpecification, JoinCriteria
 from lacquer.tree.node import Node
 from json import JSONEncoder
 
@@ -27,7 +27,7 @@ class JsonNodeEncoder(JSONEncoder):
             ret = OrderedDict([(key, getattr(obj, key)) for key in keys if getattr(obj, key)])
             return ret
 
-        if isinstance(obj, Node):
+        if isinstance(obj, (Node, JoinCriteria)):
             keys = [key for key in obj.__dict__.keys() if
                     key[0] != '_' and key not in ('line', 'pos')]
             ret = {key: getattr(obj, key) for key in keys if getattr(obj, key)}

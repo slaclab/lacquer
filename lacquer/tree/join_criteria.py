@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from inspect import getargspec
 
 
 class JoinCriteria(object):
@@ -23,6 +24,12 @@ class JoinCriteria(object):
                     return False
             return True
         return False
+
+    def __repr__(self):
+        clz = self.__class__
+        argspec = [x for x in getargspec(clz.__init__).args[1:] if self.__dict__[x] is not None]
+        args = ", ".join(["=".join((arg, repr(getattr(self, arg)))) for arg in argspec])
+        return "{name}({args})".format(name=clz.__name__, args=args)
 
 
 class NaturalJoin(JoinCriteria):
