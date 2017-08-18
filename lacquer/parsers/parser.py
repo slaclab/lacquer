@@ -245,6 +245,7 @@ def p_group_by_opt(p):
 def p_grouping_expressions(p):
     r"""grouping_expressions : value_expression
                              | grouping_expressions COMMA value_expression"""
+    assert_not_all_columns(p)
     _item_list(p)
 
 
@@ -275,7 +276,10 @@ def p_select_item(p):
 
 def p_derived_column(p):
     r"""derived_column : value_expression alias_opt"""
-    p[0] = SingleColumn(p.lineno(1), p.lexpos(1), alias=p[2], expression=p[1])
+    if isinstance(p[1], AllColumns):
+        p[0] = p[1]
+    else:
+        p[0] = SingleColumn(p.lineno(1), p.lexpos(1), alias=p[2], expression=p[1])
 
 
 def p_all_columns(p):
@@ -455,33 +459,32 @@ def p_boolean_primary(p):
 
 
 def p_predicate(p):
-    r"""predicate : comparison_predicate
-                  | between_predicate
-                  | in_predicate
-                  | like_predicate
-                  | null_predicate
-                  | exists_predicate"""
+    r"""predicate : value_expression comparison_operator value_expression
+                  | value_expression not_opt BETWEEN value_expression AND value_expression
+                  | value_expression not_opt IN in_value
+                  | value_expression not_opt LIKE value_expression
+                  | value_expression IS not_opt NULL
+                  | EXISTS subquery"""
     # TODO: maybe:  | value_expression IS not_opt DISTINCT FROM value_expression
-    p[0] = p[1]
-
-
-def p_comparison_predicate(p):
-    r"""comparison_predicate : value_expression comparison_operator value_expression"""
-    p[0] = ComparisonExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
-
-
-def p_between_predicate(p):
-    r"between_predicate : value_expression not_opt BETWEEN value_expression AND value_expression"
-    p[0] = BetweenPredicate(p.lineno(1), p.lexpos(1), value=p[1], min=p[4], max=p[6])
-    _check_not(p)
-
-
-# TODO : value_expression should include subquery in this case
-
-def p_in_predicate(p):
-    r"""in_predicate : value_expression not_opt IN in_value"""
-    p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=p[4])
-    _check_not(p)
+    assert_not_all_columns(p)
+    if len(p) < 4:
+        p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[2])
+    elif p.slice[2].type == 'comparison_operator':
+        p[0] = ComparisonExpression(p.lineno(1), p.lexpos(1), type=p[2], left=p[1], right=p[3])
+    elif p.slice[3].type == 'BETWEEN':
+        p[0] = BetweenPredicate(p.lineno(1), p.lexpos(1), value=p[1], min=p[4], max=p[6])
+        _check_not(p)
+    elif p.slice[3].type == 'IN':
+        p[0] = InPredicate(p.lineno(1), p.lexpos(1), value=p[1], value_list=p[4])
+        _check_not(p)
+    elif p.slice[3].type == 'LIKE':
+        p[0] = LikePredicate(p.lineno(1), p.lexpos(1), value=p[1], pattern=p[4])
+        _check_not(p)
+    elif p.slice[2].type == 'IS':
+        if p[3]:  # Not null
+            p[0] = IsNotNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
+        else:
+            p[0] = IsNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
 
 
 def p_in_value(p):
@@ -496,32 +499,13 @@ def p_in_value(p):
 def p_in_expressions(p):
     r"""in_expressions : value_expression
                        | in_expressions COMMA value_expression"""
+    assert_not_all_columns(p)
     _item_list(p)
-
-
-# TODO: add:    | value_expression not_opt LIKE value_expression_ ESCAPE value_expression
-def p_like_predicate(p):
-    r"""like_predicate : value_expression not_opt LIKE value_expression"""
-    p[0] = LikePredicate(p.lineno(1), p.lexpos(1), value=p[1], pattern=p[4])
-    _check_not(p)
 
 
 def _check_not(p):
     if p[2] and p.slice[2].type == "not_opt":
         p[0] = NotExpression(line=p[0].line, pos=p[0].pos, value=p[0])
-
-
-def p_null_predicate(p):
-    r"""null_predicate : value_expression IS not_opt NULL"""
-    if p[3]:  # Not null
-        p[0] = IsNotNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
-    else:
-        p[0] = IsNullPredicate(p.lineno(1), p.lexpos(1), value=p[1])
-
-
-def p_exists_predicate(p):
-    r"""exists_predicate : EXISTS subquery"""
-    p[0] = ExistsPredicate(p.lineno(1), p.lexpos(1), subquery=p[2])
 
 
 def p_value_expression(p):
@@ -571,6 +555,7 @@ def p_primary_expression(p):
 
 def p_parenthetic_primary_expression(p):
     r"""parenthetic_primary_expression : LPAREN value_expression RPAREN"""
+    assert_not_all_columns(p)
     p[0] = p[2]
 
 
@@ -580,6 +565,7 @@ def p_base_primary_expression(p):
                                 | qualified_name
                                 | subquery
                                 | function_call
+                                | table_all
                                 | date_time
                                 | case_specification
                                 | cast_specification"""
@@ -607,6 +593,11 @@ def p_function_call(p):
     # FIXME: Distinct and arguments may need to be corrected
     distinct = p[3] is None or (isinstance(p[3], str) and p[3].upper() == "DISTINCT")
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=distinct, arguments=p[3])
+
+
+def p_table_all(p):
+    r"""table_all : qualified_name PERIOD ASTERISK"""
+    p[0] = AllColumns(p.lineno(1), p.lexpos(1), prefix=p[1])
 
 
 def p_call_args(p):
@@ -763,29 +754,22 @@ def p_integer_param_opt(p):
 
 
 def p_qualified_name(p):
-    r"""qualified_name : qualified_name PERIOD identifier
-                       | identifier"""
+    r"""qualified_name : identifier
+                       | qualified_name PERIOD identifier"""
     parts = [p[1]] if len(p) == 2 else p[1].parts + [p[3]]
     p[0] = QualifiedName(parts=parts)
 
 
 def p_identifier(p):
     r"""identifier : IDENTIFIER
-                   | quoted_identifier
-                   | non_reserved
+                   | QUOTED_IDENTIFIER
+                   | BACKQUOTED_IDENTIFIER
+                   | NON_RESERVED
                    | DIGIT_IDENTIFIER"""
-    p[0] = p[1]
-
-
-def p_non_reserved(p):
-    r"""non_reserved : NON_RESERVED """
-    p[0] = p[1]
-
-
-def p_quoted_identifier(p):
-    r"""quoted_identifier : QUOTED_IDENTIFIER
-                          | BACKQUOTED_IDENTIFIER"""
-    p[0] = p[1][1:-1]  # FIXME : Trim quotes ?
+    if p.slice[1].type in ("QUOTED_IDENTIFIER", "BACKQUOTED_IDENTIFIER"):
+        p[0] = p[1][1:-1]  # FIXME : Trim quotes ?
+    else:
+        p[0] = p[1]
 
 
 def p_number(p):
@@ -800,6 +784,12 @@ def p_number(p):
 def p_empty(p):
     """empty :"""
     pass
+
+
+def assert_not_all_columns(p):
+    for i, s in enumerate(p.slice):
+        if s.type == 'value_expression' and isinstance(p[i], AllColumns):
+            raise SyntaxError
 
 
 def p_error(p):

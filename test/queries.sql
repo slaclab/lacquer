@@ -27,7 +27,7 @@ select cast(a as varchar(2)), b from foo;
 
 select foo() from bar;
 select count(*) from foo;
-
+select a.* from a;
 select y.b from ( select 1 as b from foo as a) y;
 select a.b.c.d from foo;
 select 1 from foo;

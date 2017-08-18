@@ -188,7 +188,7 @@ class Formatter(AstVisitor):
 
     def visit_all_columns(self, node, unmangle_names):
         if node.prefix:
-            return node.prefix + ".*"
+            return _format_qualified_name(node.prefix) + ".*"
         return "*"
 
     def visit_cast(self, node, unmangle_names):

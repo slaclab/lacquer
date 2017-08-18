@@ -67,6 +67,7 @@ class TestQueries(unittest.TestCase):
                 print(query)
                 print("failed to format:\n" + str(tree))
                 print(e)
+                raise e
                 print("\n\n")
         if err:
             self.fail("Encountered %d errors" % err)

@@ -30,7 +30,7 @@ class AllColumns(SelectItem):
         return visitor.visit_all_columns(self, context)
 
     def __str__(self):
-        return "%s*" % (self.prefix + ".") if self.prefix else ""
+        return "%s*" % (".".join(self.prefix.parts) + ".") if self.prefix else ""
 
 
 class SingleColumn(SelectItem):
